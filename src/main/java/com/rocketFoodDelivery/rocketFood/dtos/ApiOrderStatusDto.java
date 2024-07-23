@@ -5,8 +5,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-//this is for the get order api.
-public class ApiOrderRequestDTO {
-    int id;
-    String type;
+public class ApiOrderStatusDto {
+    String status;
 }

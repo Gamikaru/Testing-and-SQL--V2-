@@ -7,14 +7,14 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+
 @Repository
-public interface UserRepository extends JpaRepository <UserEntity, Integer> {
+public interface UserRepository extends JpaRepository<UserEntity, Integer> {
 
-    @Query(nativeQuery = true, value = "TODO Write SQL query here")
+    @Query(nativeQuery = true, value = "SELECT * FROM users WHERE id = :id")
     Optional<UserEntity> findById(int id);
-    
+
     List<UserEntity> findAllByOrderByIdDesc();
+
     Optional<UserEntity> findByEmail(String email);
-
-
 }

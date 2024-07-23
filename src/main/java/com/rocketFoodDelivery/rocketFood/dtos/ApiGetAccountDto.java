@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ApiGetAccountDTO {
+public class ApiGetAccountDto {
     @Email
     String primary_email;
     @Email

@@ -5,6 +5,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ApiRestaurantRatingDTO {
-    int restaurant_rating;
+public class ApiResponseStatusDto {
+    String status;
 }

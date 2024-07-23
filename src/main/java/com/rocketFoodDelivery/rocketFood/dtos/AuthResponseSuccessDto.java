@@ -9,6 +9,10 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-public class AuthResponseErrorDTO {
+public class AuthResponseSuccessDto {
+    private String accessToken;
     private boolean success;
+    private int user_id;
+    private int customer_id;
+    private int courier_id;
 }

@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @Entity
 @Table(name = "addresses")
-
 public class Address {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,4 +22,10 @@ public class Address {
     private String city;
     @Column(name = "postal_code", nullable = false)
     private String postalCode;
+
+    public Address(String streetAddress, String city, String postalCode) {
+        this.streetAddress = streetAddress;
+        this.city = city;
+        this.postalCode = postalCode;
+    }
 }

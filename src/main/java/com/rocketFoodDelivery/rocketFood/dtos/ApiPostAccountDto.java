@@ -5,6 +5,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ApiOrderStatusDTO {
-    String status;
+public class ApiPostAccountDto {
+    String account_type;
+    String account_email;
+    String account_phone;
 }

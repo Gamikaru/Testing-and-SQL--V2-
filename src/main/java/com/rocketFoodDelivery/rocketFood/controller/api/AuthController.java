@@ -1,8 +1,8 @@
 package com.rocketFoodDelivery.rocketFood.controller.api;
 
-import com.rocketFoodDelivery.rocketFood.dtos.AuthRequestDTO;
-import com.rocketFoodDelivery.rocketFood.dtos.AuthResponseErrorDTO;
-import com.rocketFoodDelivery.rocketFood.dtos.AuthResponseSuccessDTO;
+import com.rocketFoodDelivery.rocketFood.dtos.AuthRequestDto;
+import com.rocketFoodDelivery.rocketFood.dtos.AuthResponseErrorDto;
+import com.rocketFoodDelivery.rocketFood.dtos.AuthResponseSuccessDto;
 import com.rocketFoodDelivery.rocketFood.models.Courier;
 import com.rocketFoodDelivery.rocketFood.models.Customer;
 import com.rocketFoodDelivery.rocketFood.models.UserEntity;
@@ -37,7 +37,7 @@ public class AuthController {
         this.customerRepository = customerRepository;
     }
     @PostMapping("/api/auth")
-    public ResponseEntity<?> authenticate(@RequestBody @Valid AuthRequestDTO request){
+    public ResponseEntity<?> authenticate(@RequestBody @Valid AuthRequestDto request){
         try {
             Authentication authentication = authManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
@@ -48,7 +48,7 @@ public class AuthController {
             Optional<Courier> courier = courierRepository.findByUserEntityId(user.getId());
             Optional<Customer> customer = customerRepository.findByUserEntityId(user.getId());
 
-            AuthResponseSuccessDTO response = new AuthResponseSuccessDTO();
+            AuthResponseSuccessDto response = new AuthResponseSuccessDto();
             if(courier.isPresent()){
                 response.setCourier_id(courier.get().getId());
             }
@@ -60,7 +60,7 @@ public class AuthController {
             response.setUser_id(user.getId());
             return ResponseEntity.ok().body(response);
         } catch (BadCredentialsException e) {
-            AuthResponseErrorDTO response = new AuthResponseErrorDTO();
+            AuthResponseErrorDto response = new AuthResponseErrorDto();
             response.setSuccess(false);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }

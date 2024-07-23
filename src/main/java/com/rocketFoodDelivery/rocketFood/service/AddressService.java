@@ -10,17 +10,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
-
 @Service
 public class AddressService {
     private final AddressRepository addressRepository;
 
     @Autowired
-    public AddressService(AddressRepository addressRepository){
+    public AddressService(AddressRepository addressRepository) {
         this.addressRepository = addressRepository;
     }
 
-    public Optional<Address> findById(int id){
+    public Optional<Address> findById(int id) {
         return addressRepository.findById(id);
     }
 
@@ -32,8 +31,8 @@ public class AddressService {
             return Optional.empty();
         }
     }
-    
-    public Address saveAddress(Address address){
+
+    public Address saveAddress(Address address) {
         return addressRepository.save(address);
     }
 
@@ -47,7 +46,6 @@ public class AddressService {
             return -1;
         }
     }
-
 
     public void delete(int id) {
         addressRepository.deleteById(id);
