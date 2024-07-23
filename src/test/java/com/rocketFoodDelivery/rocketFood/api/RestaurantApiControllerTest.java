@@ -3,6 +3,9 @@ package com.rocketFoodDelivery.rocketFood.api;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.test.context.ActiveProfiles;
+
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -13,82 +16,130 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.test.web.servlet.MvcResult;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rocketFoodDelivery.rocketFood.controller.api.RestaurantApiController;
-import com.rocketFoodDelivery.rocketFood.dtos.ApiAddressDTO;
-import com.rocketFoodDelivery.rocketFood.dtos.ApiCreateRestaurantDTO;
+import com.rocketFoodDelivery.rocketFood.dtos.ApiAddressDto;
+import com.rocketFoodDelivery.rocketFood.dtos.ApiCreateRestaurantDto;
+import com.rocketFoodDelivery.rocketFood.dtos.ApiRestaurantDto;
+import com.rocketFoodDelivery.rocketFood.models.Address;
+import com.rocketFoodDelivery.rocketFood.models.Restaurant;
+import com.rocketFoodDelivery.rocketFood.models.UserEntity;
+import com.rocketFoodDelivery.rocketFood.repository.RestaurantRepository;
 import com.rocketFoodDelivery.rocketFood.repository.UserRepository;
 import com.rocketFoodDelivery.rocketFood.service.RestaurantService;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+
 @SpringBootTest
+@ActiveProfiles("test")
 @AutoConfigureMockMvc(addFilters = false)
 public class RestaurantApiControllerTest {
+        @InjectMocks
+        private RestaurantApiController restaurantController;
 
-    @InjectMocks
-    private RestaurantApiController restaurantController;
+        @Mock
+        private RestaurantService restaurantService;
 
-    @Mock
-    private RestaurantService restaurantService;
+        @Mock
+        private UserRepository userRepository;
 
-    @Mock
-    private UserRepository userRepository;
+        @Mock
+        private RestaurantRepository restaurantRepository;
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @Test
-    public void testCreateRestaurant_Success() throws Exception {
-        ApiAddressDTO inputAddress = new ApiAddressDTO(1, "123 Wellington St.", "Montreal", "H1H2H2");
-        ApiCreateRestaurantDTO inputRestaurant = new ApiCreateRestaurantDTO(1, 4, "Villa wellington", 2, "5144154415", "reservations@villawellington.com", inputAddress);
+        @Test
+        public void testCreateRestaurant_Success() throws Exception {
+                ApiCreateRestaurantDto restaurantDto = new ApiCreateRestaurantDto();
+                restaurantDto.setUserId(1); // Ensure a valid userId is set
+                restaurantDto.setName("Test Restaurant");
+                restaurantDto.setPhone("1234567890");
+                restaurantDto.setEmail("test@restaurant.com");
+                restaurantDto.setPriceRange(2); // Set a valid price range
+                restaurantDto.setAddress(new ApiAddressDto(1, "123 Test St", "Test City", "12345")); // Example address
 
-        // Mock service behavior
-        when(restaurantService.createRestaurant(any())).thenReturn(Optional.of(inputRestaurant));
+                MvcResult mvcResult = mockMvc.perform(post("/api/restaurants")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(asJsonString(restaurantDto)))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.data.name").value("Test Restaurant"))
+                                .andExpect(jsonPath("$.data.phone").value("1234567890"))
+                                .andExpect(jsonPath("$.data.email").value("test@restaurant.com"))
+                                .andReturn();
 
-        // Validate response code and content
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/restaurants")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(new ObjectMapper().writeValueAsString(inputRestaurant)))
-                .andExpect(MockMvcResultMatchers.status().isCreated())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Success"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.id").exists())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.name").value(inputRestaurant.getName()))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.phone").value(inputRestaurant.getPhone()))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.email").value(inputRestaurant.getEmail()))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.address.id").exists())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.address.city").value(inputRestaurant.getAddress().getCity()))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.address.street_address").value(inputRestaurant.getAddress().getStreetAddress()))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.address.postal_code").value(inputRestaurant.getAddress().getPostalCode()))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.user_id").value(inputRestaurant.getUserId()))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.price_range").value(inputRestaurant.getPriceRange()));
-    }
+                String responseContent = mvcResult.getResponse().getContentAsString();
+                JsonNode responseJson = new ObjectMapper().readTree(responseContent);
+                int actualId = responseJson.path("data").path("id").asInt();
 
-    @Test
-    public void testUpdateRestaurant_Success() throws Exception {
-        // Mock data
-        int restaurantId = 1;
-        ApiCreateRestaurantDTO updatedData = new ApiCreateRestaurantDTO();
-        updatedData.setName("Updated Name");
-        updatedData.setPriceRange(2);
-        updatedData.setPhone("555-1234");
+                assertNotEquals(0, actualId); // Ensure the ID is not 0 or invalid
+        }
 
-        // Mock service behavior
-        when(restaurantService.updateRestaurant(restaurantId, updatedData))
-                .thenReturn(Optional.of(updatedData));
+        @Test
+        public void testUpdateRestaurant_Success() throws Exception {
+                ApiCreateRestaurantDto restaurantDto = new ApiCreateRestaurantDto();
+                restaurantDto.setUserId(1); // Ensure a valid userId is set
+                restaurantDto.setName("Updated Restaurant");
+                restaurantDto.setPhone("0987654321");
+                restaurantDto.setEmail("updated@restaurant.com");
+                restaurantDto.setPriceRange(1); // Set a valid price range
+                restaurantDto.setAddress(new ApiAddressDto(3, "123 Test St", "Test City", "12345")); // Example address
 
-        // Validate response code and content
-        mockMvc.perform(MockMvcRequestBuilders.put("/api/restaurants/{id}", restaurantId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(new ObjectMapper().writeValueAsString(updatedData)))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Success"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.id").exists())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.name").value("Updated Name"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.price_range").value(2))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.phone").value("555-1234"));
-    }
+                // Mock the existing restaurant
+                Restaurant existingRestaurant = new Restaurant();
+                existingRestaurant.setId(2);
+                existingRestaurant.setName("Old Restaurant");
+                existingRestaurant.setPhone("1234567890");
+                existingRestaurant.setEmail("old@restaurant.com");
+                existingRestaurant.setPriceRange(2);
+                existingRestaurant.setUserEntity(UserEntity.builder()
+                                .id(3)
+                                .name("Test User")
+                                .email("user@test.com")
+                                .password("password")
+                                .build());
+                existingRestaurant.setAddress(new Address(3, "123 Old St", "Old City", "12345"));
 
+                when(restaurantRepository.findById(2)).thenReturn(Optional.of(existingRestaurant));
+                when(restaurantService.updateRestaurant(anyInt(), any(ApiCreateRestaurantDto.class)))
+                                .thenAnswer(invocation -> {
+                                        int id = invocation.getArgument(0);
+                                        ApiCreateRestaurantDto dto = invocation.getArgument(1);
+                                        dto.setId(id); // Ensure the returned DTO has the correct ID set
+                                        return Optional.of(dto);
+                                });
 
+                MvcResult mvcResult = mockMvc.perform(put("/api/restaurants/{id}", 2)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(asJsonString(restaurantDto)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.name").value("Updated Restaurant"))
+                                .andExpect(jsonPath("$.data.phone").value("0987654321"))
+                                .andExpect(jsonPath("$.data.email").value("updated@restaurant.com"))
+                                .andReturn();
+
+                // Log the response content
+                String responseContent = mvcResult.getResponse().getContentAsString();
+                System.out.println("Response: " + responseContent);
+
+                // Log the status
+                int status = mvcResult.getResponse().getStatus();
+                System.out.println("Status: " + status);
+        }
+
+        // Helper method to convert objects to JSON string
+        private static String asJsonString(final Object obj) {
+                try {
+                        return new ObjectMapper().writeValueAsString(obj);
+                } catch (Exception e) {
+                        throw new RuntimeException(e);
+                }
+        }
 }

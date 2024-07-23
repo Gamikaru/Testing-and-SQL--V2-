@@ -1,7 +1,7 @@
 package com.rocketFoodDelivery.rocketFood.util;
 
 import org.springframework.http.ResponseEntity;
-import com.rocketFoodDelivery.rocketFood.dtos.ApiResponseDTO;
+import com.rocketFoodDelivery.rocketFood.dtos.ApiResponseDto;
 
 import org.springframework.http.HttpStatus;
 
@@ -13,14 +13,14 @@ import org.springframework.http.HttpStatus;
 public class ResponseBuilder {
 
     public static ResponseEntity<Object> buildOkResponse(Object data) {
-        ApiResponseDTO response = new ApiResponseDTO();
+        ApiResponseDto response = new ApiResponseDto();
         response.setMessage("Success");
         response.setData(data);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     public static ResponseEntity<Object> buildCreatedResponse(Object data) {
-        ApiResponseDTO response = new ApiResponseDTO();
+        ApiResponseDto response = new ApiResponseDto();
         response.setMessage("Success");
         response.setData(data);
         return new ResponseEntity<>(response, HttpStatus.CREATED);

@@ -11,7 +11,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ApiRestaurantDTO {
+public class ApiRestaurantDto {
     int id;
     
     String name;

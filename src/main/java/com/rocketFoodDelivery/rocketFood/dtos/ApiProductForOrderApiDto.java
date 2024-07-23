@@ -6,7 +6,7 @@ import lombok.Setter;
 @Getter
 @Setter
 // the order api has a prodect. and this is for that
-public class ApiProductForOrderApiDTO {
+public class ApiProductForOrderApiDto {
     int id;
     String product_name;
     int quantity;

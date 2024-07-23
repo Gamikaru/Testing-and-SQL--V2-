@@ -8,7 +8,7 @@ import java.util.List;
 @Getter
 @Setter
 //this is a class created to process the order details for the order api from postman.
-public class ApiOrderDTO {
+public class ApiOrderDto {
     int id ;
     int customer_id;
     String customer_name;
@@ -17,6 +17,6 @@ public class ApiOrderDTO {
     String restaurant_name;
     String restaurant_address;
     String status;
-    List <ApiProductForOrderApiDTO> products;
+    List <ApiProductForOrderApiDto> products;
     long total_cost;
 }
