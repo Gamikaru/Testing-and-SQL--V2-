@@ -33,6 +33,7 @@ import com.rocketFoodDelivery.rocketFood.service.RestaurantService;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -123,6 +124,66 @@ public class RestaurantApiControllerTest {
                                 .andExpect(jsonPath("$.data.name").value("Updated Restaurant"))
                                 .andExpect(jsonPath("$.data.phone").value("0987654321"))
                                 .andExpect(jsonPath("$.data.email").value("updated@restaurant.com"))
+                                .andReturn();
+
+                // Log the response content
+                String responseContent = mvcResult.getResponse().getContentAsString();
+                System.out.println("Response: " + responseContent);
+
+                // Log the status
+                int status = mvcResult.getResponse().getStatus();
+                System.out.println("Status: " + status);
+        }
+
+        @Test
+        public void testDeleteRestaurant_Success() throws Exception {
+                int restaurantId = 2; // Ensure this ID exists in your mock data
+
+                // Mock the existing restaurant
+                Restaurant existingRestaurant = new Restaurant();
+                existingRestaurant.setId(restaurantId);
+                existingRestaurant.setName("Test Restaurant");
+                existingRestaurant.setPhone("1234567890");
+                existingRestaurant.setEmail("test@restaurant.com");
+                existingRestaurant.setPriceRange(2);
+                existingRestaurant.setUserEntity(UserEntity.builder()
+                                .id(1)
+                                .name("Test User")
+                                .email("user@test.com")
+                                .password("password")
+                                .build());
+                existingRestaurant.setAddress(new Address(1, "123 Test St", "Test City", "12345"));
+
+                when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(existingRestaurant));
+                doNothing().when(restaurantService).deleteRestaurant(restaurantId);
+
+                MvcResult mvcResult = mockMvc.perform(delete("/api/restaurants/{id}", restaurantId)
+                                .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message").value("Restaurant deleted successfully"))
+                                .andReturn();
+
+                // Log the response content
+                String responseContent = mvcResult.getResponse().getContentAsString();
+                System.out.println("Response: " + responseContent);
+
+                // Log the status
+                int status = mvcResult.getResponse().getStatus();
+                System.out.println("Status: " + status);
+        }
+
+        @Test
+        public void testDeleteRestaurant_NotFound() throws Exception {
+                int restaurantId = 100; // Ensure this ID does not exist in your mock data
+
+                when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.empty());
+
+                MvcResult mvcResult = mockMvc.perform(delete("/api/restaurants/{id}", restaurantId)
+                                .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message").value("Resource not found"))
+                                .andExpect(jsonPath("$.data")
+                                                .value("Restaurant with id " + restaurantId + " not found"))
                                 .andReturn();
 
                 // Log the response content
