@@ -13,7 +13,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ApiAddressDto {
-    private int id;
+    private Integer id;
 
     @JsonProperty("street_address")
     @NotNull

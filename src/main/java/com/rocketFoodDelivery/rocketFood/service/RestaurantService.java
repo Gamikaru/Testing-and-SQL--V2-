@@ -137,6 +137,11 @@ public class RestaurantService {
                 restaurantDto.getPriceRange(), restaurantDto.getPhone(), restaurantDto.getEmail());
         restaurantRepository.save(restaurant);
         restaurantDto.setId(restaurant.getId());
+
+        // Log the persisted data
+        System.out.println("Persisted Restaurant: " + restaurant);
+        System.out.println("Persisted Address: " + address);
+
         return Optional.of(restaurantDto);
     }
 

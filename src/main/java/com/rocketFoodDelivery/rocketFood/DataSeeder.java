@@ -8,6 +8,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -56,7 +57,7 @@ public class DataSeeder {
 
     Faker faker = new Faker();
 
-    // @PostConstruct
+    @PostConstruct
     public void seedData() {
 
         seedUsers();
@@ -101,16 +102,25 @@ public class DataSeeder {
         List<Restaurant> restaurants = new ArrayList<>();
         List<UserEntity> users = userRepository.findAll();
         List<Address> addresses = addressRepository.findAll();
+
+        // Loop through the users and addresses to create restaurants
         for (int i = 0; i < 8; i++) {
-            Restaurant restaurant = Restaurant.builder()
-                    .userEntity(users.get(i + 1))
-                    .address(addresses.get(i + 1))
-                    .name(faker.company().name())
-                    .phone("+1 437 - 221 - 698" + i)
-                    .email(faker.internet().emailAddress())
-                    .priceRange(ThreadLocalRandom.current().nextInt(3) + 1)
-                    .build();
-            restaurants.add(restaurant);
+            UserEntity user = users.get(i + 1);
+            Address address = addresses.get(i + 1);
+
+            // Check if a restaurant with the same user and address already exists
+            Optional<Restaurant> existingRestaurant = restaurantRepository.findByUserEntityAndAddress(user, address);
+            if (existingRestaurant.isEmpty()) {
+                Restaurant restaurant = Restaurant.builder()
+                        .userEntity(user)
+                        .address(address)
+                        .name(faker.company().name())
+                        .phone("+1 437 - 221 - 698" + i)
+                        .email(faker.internet().emailAddress())
+                        .priceRange(ThreadLocalRandom.current().nextInt(3) + 1)
+                        .build();
+                restaurants.add(restaurant);
+            }
         }
         restaurantRepository.saveAll(restaurants);
     }
@@ -135,15 +145,15 @@ public class DataSeeder {
     }
 
     private void seedOrderStatuses() {
-        List<String> order_statuses = Arrays.asList("pending", "in progress", "delivered");
-        List<OrderStatus> orderStatuses = new ArrayList<>();
+        List<String> orderStatuses = Arrays.asList("pending", "in progress", "delivered");
+        List<OrderStatus> orderStatusList = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             OrderStatus orderStatus = OrderStatus.builder()
-                    .name(order_statuses.get(i))
+                    .name(orderStatuses.get(i))
                     .build();
-            orderStatuses.add(orderStatus);
+            orderStatusList.add(orderStatus);
         }
-        orderStatusRepository.saveAll(orderStatuses);
+        orderStatusRepository.saveAll(orderStatusList);
     }
 
     private void seedOrdersAndProductOrders() {
@@ -159,7 +169,7 @@ public class DataSeeder {
             Order order = Order.builder()
                     .restaurant(restaurant)
                     .customer(customer)
-                    .order_status(orderStatus)
+                    .order_status(orderStatus) // Corrected method name
                     .restaurant_rating(ThreadLocalRandom.current().nextInt(5) + 1)
                     .build();
             orders.add(order);
@@ -170,13 +180,17 @@ public class DataSeeder {
                 while (continueLoop) {
                     try {
                         Product product = products.get(ThreadLocalRandom.current().nextInt(products.size()));
-                        ProductOrder productOrder = ProductOrder.builder()
-                                .product(product)
-                                .order(order)
-                                .product_quantity(random.nextInt(3) + 1)
-                                .product_unit_cost(product.getCost())
-                                .build();
-                        productOrderRepository.save(productOrder);
+                        // Check if the product order already exists
+                        if (productOrderRepository.findByOrderIdAndProductId(order.getId(), product.getId())
+                                .isEmpty()) {
+                            ProductOrder productOrder = ProductOrder.builder()
+                                    .product(product)
+                                    .order(order)
+                                    .product_quantity(random.nextInt(3) + 1) // Corrected method name
+                                    .product_unit_cost(product.getCost())
+                                    .build();
+                            productOrderRepository.save(productOrder);
+                        }
                         continueLoop = false;
                     } catch (Exception ignored) {
                     }
@@ -185,38 +199,55 @@ public class DataSeeder {
         }
     }
 
-    private void seedEmployees() {
+    public void seedEmployees() {
         List<Address> addresses = addressRepository.findAll();
+
         UserEntity erica = new UserEntity();
         erica.setEmail("erica.ger@gmail.com");
         erica.setName("Erica Ger");
         erica.setPassword("password");
-        userRepository.save(erica);
 
-        Address ericaAddress = new Address();
-        ericaAddress.setStreetAddress("123 CodeBoxx Boulevard");
-        ericaAddress.setCity("Montreal");
-        ericaAddress.setPostalCode("H4G52Z");
-        addressRepository.save(ericaAddress);
+        // Check if the user with this email already exists
+        Optional<UserEntity> existingUser = userRepository.findByEmail(erica.getEmail());
+        if (existingUser.isEmpty()) {
+            userRepository.save(erica);
 
-        Employee ericaEmployee = new Employee();
-        ericaEmployee.setUserEntity(erica);
-        ericaEmployee.setAddress(ericaAddress);
-        ericaEmployee.setEmail(faker.internet().emailAddress());
-        ericaEmployee.setPhone("000000");
-        employeeRepository.save(ericaEmployee);
+            Address ericaAddress = new Address();
+            ericaAddress.setStreetAddress("123 CodeBoxx Boulevard");
+            ericaAddress.setCity("Montreal");
+            ericaAddress.setPostalCode("H4G52Z");
+            addressRepository.save(ericaAddress);
+
+            Employee ericaEmployee = new Employee();
+            ericaEmployee.setUserEntity(erica);
+            ericaEmployee.setAddress(ericaAddress);
+            ericaEmployee.setEmail(faker.internet().emailAddress());
+            ericaEmployee.setPhone("000000");
+
+            // Check if the employee with this user ID already exists
+            Optional<Employee> existingEmployee = employeeRepository.findByUserEntityId(erica.getId());
+            if (existingEmployee.isEmpty()) {
+                employeeRepository.save(ericaEmployee);
+            }
+        }
 
         List<Employee> employees = new ArrayList<>();
         List<UserEntity> users = userRepository.findAll();
         for (int i = 0; i < 2; i++) {
-            Employee employee = Employee.builder()
-                    .userEntity(users.get(i))
+            UserEntity user = users.get(i);
+            Address address = addresses.get(i + 1);
 
-                    .phone("+1 437 - 2" + i + "1 - 698" + i)
-                    .email(faker.internet().emailAddress())
-                    .address(addresses.get(i + 1))
-                    .build();
-            employees.add(employee);
+            // Check if the employee with this user ID already exists
+            Optional<Employee> existingEmployee = employeeRepository.findByUserEntityId(user.getId());
+            if (existingEmployee.isEmpty()) {
+                Employee employee = Employee.builder()
+                        .userEntity(user)
+                        .phone("+1 437 - 2" + i + "1 - 698" + i)
+                        .email(faker.internet().emailAddress())
+                        .address(address)
+                        .build();
+                employees.add(employee);
+            }
         }
         employeeRepository.saveAll(employees);
     }
@@ -227,21 +258,38 @@ public class DataSeeder {
         List<Address> addresses = addressRepository.findAll();
 
         for (int i = 0; i < 10; i++) {
-            Customer customer = Customer.builder()
-                    .userEntity(users.get(i + 1))
-                    .address(addresses.get(ThreadLocalRandom.current().nextInt(addresses.size())))
-                    .email(faker.internet().emailAddress())
-                    .phone("+1 43" + i + " - 221 - 698" + i)
-                    .build();
-            customers.add(customer);
+            // Ensure we don't exceed the available number of users
+            if (i + 1 >= users.size()) {
+                break;
+            }
+
+            UserEntity user = users.get(i + 1);
+            Address address = addresses.get(ThreadLocalRandom.current().nextInt(addresses.size()));
+
+            // Generate a unique email address for the customer
+            String uniqueEmail = "customer" + i + "_" + faker.internet().emailAddress();
+
+            // Check if a customer with the same user already exists
+            if (customerRepository.findByUserEntity(user).isEmpty()) {
+                Customer customer = Customer.builder()
+                        .userEntity(user)
+                        .address(address)
+                        .email(uniqueEmail)
+                        .phone("+1 43" + i + " - 221 - 698" + i)
+                        .active(true)
+                        .build();
+                customers.add(customer);
+            } else {
+                System.out.println("Duplicate found: User " + user.getId() + " already has a customer entry.");
+            }
         }
         customerRepository.saveAll(customers);
     }
 
     private void seedCourierStatuses() {
         List<CourierStatus> courierStatuses = new ArrayList<>();
-        List<String> Statuses = Arrays.asList("free", "busy", "full", "offline");
-        for (String status : Statuses) {
+        List<String> statuses = Arrays.asList("free", "busy", "full", "offline");
+        for (String status : statuses) {
             CourierStatus courierStatus = CourierStatus.builder()
                     .name(status)
                     .build();
@@ -254,17 +302,26 @@ public class DataSeeder {
         List<Courier> couriers = new ArrayList<>();
         List<CourierStatus> courierStatuses = courierStatusRepository.findAll();
         List<Address> addresses = addressRepository.findAll();
-        List<UserEntity> user = userRepository.findAll();
+        List<UserEntity> users = userRepository.findAll();
+
         for (int i = 0; i < 8; i++) {
             Random random = new Random();
-            Courier courier = Courier.builder()
-                    .userEntity(user.get(i))
-                    .address(addresses.get(i))
-                    .email(faker.internet().emailAddress())
-                    .phone("+1 4" + i + "7 - 221 - 698" + i)
-                    .courierStatus(courierStatuses.get(random.nextInt(4)))
-                    .build();
-            couriers.add(courier);
+            UserEntity user = users.get(i);
+            Address address = addresses.get(i);
+
+            // Check if a courier with the same user already exists
+            if (courierRepository.findByUserEntityId(user.getId()).isEmpty()) {
+                Courier courier = Courier.builder()
+                        .userEntity(user)
+                        .address(address)
+                        .email(faker.internet().emailAddress())
+                        .phone("+1 4" + i + "7 - 221 - 698" + i)
+                        .courierStatus(courierStatuses.get(random.nextInt(4)))
+                        .build();
+                couriers.add(courier);
+            } else {
+                System.out.println("Duplicate found: User " + user.getId() + " already has a courier entry.");
+            }
         }
         courierRepository.saveAll(couriers);
     }
