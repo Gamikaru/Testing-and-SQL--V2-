@@ -1,6 +1,8 @@
 package com.rocketFoodDelivery.rocketFood.repository;
 
 import com.rocketFoodDelivery.rocketFood.models.Restaurant;
+import com.rocketFoodDelivery.rocketFood.models.UserEntity;
+import com.rocketFoodDelivery.rocketFood.models.Address;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -16,6 +18,9 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Integer>
         Optional<Restaurant> findByUserEntityId(int id);
 
         List<Restaurant> findAll();
+
+        // Add this method to find a restaurant by user and address
+        Optional<Restaurant> findByUserEntityAndAddress(UserEntity userEntity, Address address);
 
         @Query(nativeQuery = true, value = "SELECT r.id, r.name, r.price_range, COALESCE(CEIL(SUM(o.restaurant_rating) / NULLIF(COUNT(o.id), 0)), 0) AS rating "
                         +

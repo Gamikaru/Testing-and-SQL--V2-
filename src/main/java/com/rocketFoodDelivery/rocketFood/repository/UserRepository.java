@@ -14,7 +14,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Integer> {
     @Query(nativeQuery = true, value = "SELECT * FROM users WHERE id = :id")
     Optional<UserEntity> findById(int id);
 
-    List<UserEntity> findAllByOrderByIdDesc();
-
     Optional<UserEntity> findByEmail(String email);
+
+    List<UserEntity> findAllByOrderByIdDesc();
 }
