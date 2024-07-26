@@ -67,26 +67,29 @@ public class RestaurantApiControllerTest {
         reset(restaurantService, userRepository, restaurantRepository);
 
         // Set up mock data for tests
-        UserEntity testUser = new UserEntity();
-        testUser.setId(1);
-        testUser.setName("Test User");
-        testUser.setEmail("user@test.com");
-        testUser.setPassword("password");
+        UserEntity testUser = UserEntity.builder()
+                .id(1)
+                .name("Test User")
+                .email("user@test.com")
+                .password("password")
+                .build();
 
-        Address testAddress = new Address();
-        testAddress.setId(1);
-        testAddress.setStreetAddress("123 Test St");
-        testAddress.setCity("Test City");
-        testAddress.setPostalCode("12345");
+        Address testAddress = Address.builder()
+                .id(1)
+                .streetAddress("123 Test St")
+                .city("Test City")
+                .postalCode("12345")
+                .build();
 
-        Restaurant testRestaurant = new Restaurant();
-        testRestaurant.setId(1);
-        testRestaurant.setName("Test Restaurant");
-        testRestaurant.setPhone("1234567890");
-        testRestaurant.setEmail("test@restaurant.com");
-        testRestaurant.setPriceRange(2);
-        testRestaurant.setUserEntity(testUser);
-        testRestaurant.setAddress(testAddress);
+        Restaurant testRestaurant = Restaurant.builder()
+                .id(1)
+                .name("Test Restaurant")
+                .phone("1234567890")
+                .email("test@restaurant.com")
+                .priceRange(2)
+                .userEntity(testUser)
+                .address(testAddress)
+                .build();
 
         when(userRepository.findById(1)).thenReturn(Optional.of(testUser));
         when(restaurantRepository.findById(1)).thenReturn(Optional.of(testRestaurant));
@@ -140,19 +143,25 @@ public class RestaurantApiControllerTest {
         restaurantDto.setPriceRange(1);
         restaurantDto.setAddress(new ApiAddressDto(3, "123 Test St", "Test City", "12345"));
 
-        Restaurant existingRestaurant = new Restaurant();
-        existingRestaurant.setId(2);
-        existingRestaurant.setName("Old Restaurant");
-        existingRestaurant.setPhone("1234567890");
-        existingRestaurant.setEmail("old@restaurant.com");
-        existingRestaurant.setPriceRange(2);
-        existingRestaurant.setUserEntity(UserEntity.builder()
-                .id(3)
-                .name("Test User")
-                .email("user@test.com")
-                .password("password")
-                .build());
-        existingRestaurant.setAddress(new Address(3, "123 Old St", "Old City", "12345"));
+        Restaurant existingRestaurant = Restaurant.builder()
+                .id(2)
+                .name("Old Restaurant")
+                .phone("1234567890")
+                .email("old@restaurant.com")
+                .priceRange(2)
+                .userEntity(UserEntity.builder()
+                        .id(3)
+                        .name("Test User")
+                        .email("user@test.com")
+                        .password("password")
+                        .build())
+                .address(Address.builder()
+                        .id(3)
+                        .streetAddress("123 Old St")
+                        .city("Old City")
+                        .postalCode("12345")
+                        .build())
+                .build();
 
         when(restaurantRepository.findById(2)).thenReturn(Optional.of(existingRestaurant));
         when(restaurantService.updateRestaurant(anyInt(), any(ApiCreateRestaurantDto.class)))
@@ -183,19 +192,25 @@ public class RestaurantApiControllerTest {
     public void testDeleteRestaurant_Success() throws Exception {
         int restaurantId = 2;
 
-        Restaurant existingRestaurant = new Restaurant();
-        existingRestaurant.setId(restaurantId);
-        existingRestaurant.setName("Test Restaurant");
-        existingRestaurant.setPhone("1234567890");
-        existingRestaurant.setEmail("test@restaurant.com");
-        existingRestaurant.setPriceRange(2);
-        existingRestaurant.setUserEntity(UserEntity.builder()
-                .id(1)
-                .name("Test User")
-                .email("user@test.com")
-                .password("password")
-                .build());
-        existingRestaurant.setAddress(new Address(1, "123 Test St", "Test City", "12345"));
+        Restaurant existingRestaurant = Restaurant.builder()
+                .id(restaurantId)
+                .name("Test Restaurant")
+                .phone("1234567890")
+                .email("test@restaurant.com")
+                .priceRange(2)
+                .userEntity(UserEntity.builder()
+                        .id(1)
+                        .name("Test User")
+                        .email("user@test.com")
+                        .password("password")
+                        .build())
+                .address(Address.builder()
+                        .id(1)
+                        .streetAddress("123 Test St")
+                        .city("Test City")
+                        .postalCode("12345")
+                        .build())
+                .build();
 
         when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(existingRestaurant));
         doNothing().when(restaurantService).deleteRestaurant(restaurantId);
