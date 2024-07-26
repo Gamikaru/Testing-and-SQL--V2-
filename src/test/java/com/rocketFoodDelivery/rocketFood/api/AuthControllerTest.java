@@ -75,7 +75,7 @@ public class AuthControllerTest {
 
     /**
      * Select a random user from the list of users.
-     * 
+     *
      * @return A random UserEntity.
      */
     private UserEntity getRandomUser() {

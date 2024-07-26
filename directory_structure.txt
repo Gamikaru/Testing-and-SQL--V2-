@@ -69,6 +69,7 @@
 │   │   │               │   └── SecurityConfig.java
 │   │   │               ├── service
 │   │   │               │   ├── AddressService.java
+│   │   │               │   ├── AuthService.java
 │   │   │               │   ├── CourierService.java
 │   │   │               │   ├── CourierStatusService.java
 │   │   │               │   ├── CustomerService.java
@@ -96,6 +97,7 @@
 │               └── rocketFoodDelivery
 │                   └── rocketFood
 │                       ├── api
+│                       │   ├── AuthControllerTest.java
 │                       │   └── RestaurantApiControllerTest.java
 │                       ├── database
 │                       └── repository
@@ -179,6 +181,7 @@
     │   │           │   └── SecurityConfig.class
     │   │           ├── service
     │   │           │   ├── AddressService.class
+    │   │           │   ├── AuthService.class
     │   │           │   ├── CourierService.class
     │   │           │   ├── CourierStatusService.class
     │   │           │   ├── CustomerService.class
@@ -211,14 +214,23 @@
     │           └── default-testCompile
     │               ├── createdFiles.lst
     │               └── inputFiles.lst
+    ├── surefire
+    │   ├── surefire-20240726001418325_1tmp
+    │   ├── surefire_0-20240726001418325_2tmp
+    │   └── surefirebooter-20240726001418325_3.jar
     ├── surefire-reports
+    │   ├── 2024-07-26T00-14-18_175-jvmRun1-commands.bin
+    │   ├── 2024-07-26T00-14-18_175-jvmRun1-events.bin
+    │   ├── TEST-com.rocketFoodDelivery.rocketFood.api.AuthControllerTest.xml
     │   ├── TEST-com.rocketFoodDelivery.rocketFood.api.RestaurantApiControllerTest.xml
+    │   ├── com.rocketFoodDelivery.rocketFood.api.AuthControllerTest.txt
     │   └── com.rocketFoodDelivery.rocketFood.api.RestaurantApiControllerTest.txt
     └── test-classes
         └── com
             └── rocketFoodDelivery
                 └── rocketFood
                     └── api
+                        ├── AuthControllerTest.class
                         └── RestaurantApiControllerTest.class
 
-56 directories, 165 files
+57 directories, 176 files
