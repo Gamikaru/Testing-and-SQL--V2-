@@ -45,13 +45,5 @@ public class Restaurant {
     @Column(nullable = false)
     private String email;
 
-    // Constructor without id
-    public Restaurant(UserEntity userEntity, Address address, String name, int priceRange, String phone, String email) {
-        this.userEntity = userEntity;
-        this.address = address;
-        this.name = name;
-        this.priceRange = priceRange;
-        this.phone = phone;
-        this.email = email;
-    }
+    
 }
