@@ -19,7 +19,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
-
 import java.util.Optional;
 
 @Service
@@ -104,7 +103,12 @@ public class RestaurantService {
             double avgRating = (row[3] != null) ? ((BigDecimal) row[3]).setScale(1, RoundingMode.HALF_UP).doubleValue()
                     : 0.0;
             int roundedAvgRating = (int) Math.ceil(avgRating);
-            restaurantDtos.add(new ApiRestaurantDto(restaurantId, name, range, roundedAvgRating));
+            restaurantDtos.add(ApiRestaurantDto.builder()
+                    .id(restaurantId)
+                    .name(name)
+                    .priceRange(range)
+                    .rating(roundedAvgRating)
+                    .build());
         }
 
         return restaurantDtos;
@@ -127,14 +131,21 @@ public class RestaurantService {
         }
         UserEntity userEntity = userOptional.get();
 
-        Address address = new Address();
-        address.setStreetAddress(restaurantDto.getAddress().getStreetAddress());
-        address.setCity(restaurantDto.getAddress().getCity());
-        address.setPostalCode(restaurantDto.getAddress().getPostalCode());
+        Address address = Address.builder()
+                .streetAddress(restaurantDto.getAddress().getStreetAddress())
+                .city(restaurantDto.getAddress().getCity())
+                .postalCode(restaurantDto.getAddress().getPostalCode())
+                .build();
         address = addressRepository.save(address);
 
-        Restaurant restaurant = new Restaurant(userEntity, address, restaurantDto.getName(),
-                restaurantDto.getPriceRange(), restaurantDto.getPhone(), restaurantDto.getEmail());
+        Restaurant restaurant = Restaurant.builder()
+                .userEntity(userEntity)
+                .address(address)
+                .name(restaurantDto.getName())
+                .priceRange(restaurantDto.getPriceRange())
+                .phone(restaurantDto.getPhone())
+                .email(restaurantDto.getEmail())
+                .build();
         restaurantRepository.save(restaurant);
         restaurantDto.setId(restaurant.getId());
 

@@ -23,9 +23,4 @@ public class Address {
     @Column(name = "postal_code", nullable = false)
     private String postalCode;
 
-    public Address(String streetAddress, String city, String postalCode) {
-        this.streetAddress = streetAddress;
-        this.city = city;
-        this.postalCode = postalCode;
-    }
 }
