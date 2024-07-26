@@ -40,7 +40,7 @@ public class AuthController {
 
     /**
      * Authenticate the user and return an appropriate response.
-     * 
+     *
      * @param request The authentication request containing email and password.
      * @return ResponseEntity containing either the success or error DTO.
      */
@@ -61,17 +61,10 @@ public class AuthController {
             // Generate JWT access token
             String accessToken = jwtUtil.generateAccessToken(user);
 
-            // Retrieve user details for response
-            Optional<Courier> courier = courierRepository.findByUserEntityId(user.getId());
-            Optional<Customer> customer = customerRepository.findByUserEntityId(user.getId());
-
             // Prepare successful response
             AuthResponseSuccessDto response = new AuthResponseSuccessDto();
-            courier.ifPresent(value -> response.setCourier_id(value.getId()));
-            customer.ifPresent(value -> response.setCustomer_id(value.getId()));
             response.setSuccess(true);
             response.setAccessToken(accessToken);
-            response.setUser_id(user.getId());
 
             // Log success and return response
             System.out.println("Authentication successful for user: " + user.getUsername());
