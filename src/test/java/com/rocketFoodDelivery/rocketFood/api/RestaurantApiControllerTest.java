@@ -40,9 +40,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-
 @SpringBootTest
-@ActiveProfiles("test") // This activates the test profile
+@ActiveProfiles("test")
 @AutoConfigureMockMvc(addFilters = false)
 @Transactional
 public class RestaurantApiControllerTest {
@@ -227,6 +226,61 @@ public class RestaurantApiControllerTest {
                 .andExpect(jsonPath("$.data").value("Restaurant with id " + restaurantId + " not found"))
                 .andReturn();
 
+        String responseContent = mvcResult.getResponse().getContentAsString();
+        System.out.println("Response: " + responseContent);
+
+        int status = mvcResult.getResponse().getStatus();
+        System.out.println("Status: " + status);
+    }
+
+    @Test
+    public void testUpdateRestaurant_NotFound() throws Exception {
+        ApiCreateRestaurantDto restaurantDto = new ApiCreateRestaurantDto();
+        restaurantDto.setUserId(1);
+        restaurantDto.setName("Non-existent Restaurant");
+        restaurantDto.setPhone("0000000000");
+        restaurantDto.setEmail("nonexistent@restaurant.com");
+        restaurantDto.setPriceRange(1);
+        restaurantDto.setAddress(new ApiAddressDto(1, "123 Test St", "Test City", "12345"));
+
+        when(restaurantRepository.findById(100)).thenReturn(Optional.empty());
+
+        MvcResult mvcResult = mockMvc.perform(put("/api/restaurants/{id}", 100)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(restaurantDto)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Resource not found"))
+                .andExpect(jsonPath("$.data").value("Restaurant with id 100 not found"))
+                .andReturn();
+
+        String responseContent = mvcResult.getResponse().getContentAsString();
+        System.out.println("Response: " + responseContent);
+
+        int status = mvcResult.getResponse().getStatus();
+        System.out.println("Status: " + status);
+    }
+
+    @Test
+    public void testCreateRestaurant_InvalidData() throws Exception {
+        ApiCreateRestaurantDto restaurantDto = new ApiCreateRestaurantDto();
+        restaurantDto.setUserId(1);
+        restaurantDto.setName(""); // Invalid name
+        restaurantDto.setPhone("1234567890");
+        restaurantDto.setEmail("invalid-email"); // Invalid email format
+        restaurantDto.setPriceRange(0); // Invalid price range
+        restaurantDto.setAddress(new ApiAddressDto(1, "123 Test St", "Test City", "12345"));
+
+        // Log the request payload
+        System.out.println("Request payload: " + asJsonString(restaurantDto));
+
+        MvcResult mvcResult = mockMvc.perform(post("/api/restaurants")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(asJsonString(restaurantDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Validation failed"))
+                .andReturn();
+
+        // Log the response
         String responseContent = mvcResult.getResponse().getContentAsString();
         System.out.println("Response: " + responseContent);
 
