@@ -9,7 +9,8 @@ import com.rocketFoodDelivery.rocketFood.util.ResponseBuilder;
 import com.rocketFoodDelivery.rocketFood.exception.*;
 
 import jakarta.validation.Valid;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/restaurants")
 public class RestaurantApiController {
 
+    private static final Logger logger = LoggerFactory.getLogger(RestaurantApiController.class);
     private final RestaurantService restaurantService;
 
     @Autowired
@@ -34,64 +36,73 @@ public class RestaurantApiController {
     @PostMapping
     public ResponseEntity<ApiResponseDto> createRestaurant(@Valid @RequestBody ApiCreateRestaurantDto restaurantDto,
             BindingResult bindingResult) {
+        logger.info("Creating a new restaurant with data: {}", restaurantDto);
+
         if (bindingResult.hasErrors()) {
             List<String> errors = bindingResult.getAllErrors().stream()
                     .map(ObjectError::getDefaultMessage)
                     .collect(Collectors.toList());
+            logger.warn("Validation errors occurred: {}", errors);
             return ResponseEntity.badRequest().body(new ApiResponseDto("Validation failed", errors));
         }
+
         return restaurantService.createRestaurant(restaurantDto)
-                .map(createdRestaurant -> ResponseEntity.status(201)
-                        .body(new ApiResponseDto("Success", createdRestaurant)))
-                .orElseGet(() -> ResponseEntity.badRequest()
-                        .body(new ApiResponseDto("Failed to create restaurant", null)));
+                .map(createdRestaurant -> {
+                    logger.info("Restaurant created successfully: {}", createdRestaurant);
+                    return ResponseEntity.status(201)
+                            .body(new ApiResponseDto("Success", createdRestaurant));
+                })
+                .orElseGet(() -> {
+                    logger.error("Failed to create restaurant");
+                    return ResponseEntity.badRequest()
+                            .body(new ApiResponseDto("Failed to create restaurant", null));
+                });
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponseDto> deleteRestaurant(@PathVariable int id) {
+        logger.info("Deleting restaurant with id: {}", id);
+
         Optional<Restaurant> restaurantOptional = restaurantService.findById(id);
         if (restaurantOptional.isEmpty()) {
+            logger.warn("Restaurant with id {} not found", id);
             return ResponseEntity.status(404)
                     .body(new ApiResponseDto("Resource not found", "Restaurant with id " + id + " not found"));
         }
 
         restaurantService.deleteRestaurant(id);
+        logger.info("Restaurant with id {} deleted successfully", id);
         return ResponseEntity.ok().body(new ApiResponseDto("Restaurant deleted successfully", null));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponseDto> updateRestaurant(@PathVariable("id") int id,
             @Valid @RequestBody ApiCreateRestaurantDto restaurantUpdateData, BindingResult result) {
+        logger.info("Received update request for restaurant id: {}", id);
+        logger.debug("Update data: {}", restaurantUpdateData);
 
-        // Log the incoming data
-        System.out.println("Received update request for restaurant id: " + id);
-        System.out.println("Update data: " + restaurantUpdateData);
-
-        // Check if the restaurant exists before validating the data
         Optional<Restaurant> restaurantOptional = restaurantService.findById(id);
         if (restaurantOptional.isEmpty()) {
-            System.out.println("Restaurant with id " + id + " not found");
+            logger.warn("Restaurant with id {} not found", id);
             return ResponseEntity.status(404)
                     .body(new ApiResponseDto("Resource not found", "Restaurant with id " + id + " not found"));
         }
 
-        // Check for validation errors
         if (result.hasErrors()) {
             List<String> errors = result.getAllErrors().stream()
                     .map(ObjectError::getDefaultMessage)
                     .collect(Collectors.toList());
-            // Log validation errors
-            errors.forEach(System.out::println);
+            logger.warn("Validation errors occurred: {}", errors);
             return ResponseEntity.badRequest().body(new ApiResponseDto("Validation failed", errors));
         }
 
         return restaurantService.updateRestaurant(id, restaurantUpdateData)
                 .map(updatedRestaurant -> {
-                    System.out.println("Updated restaurant: " + updatedRestaurant);
+                    logger.info("Updated restaurant: {}", updatedRestaurant);
                     return ResponseEntity.ok().body(new ApiResponseDto("Success", updatedRestaurant));
                 })
                 .orElseGet(() -> {
-                    System.out.println("Failed to update restaurant");
+                    logger.error("Failed to update restaurant");
                     return ResponseEntity.badRequest()
                             .body(new ApiResponseDto("Failed to update restaurant", null));
                 });
@@ -99,16 +110,22 @@ public class RestaurantApiController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Object> getRestaurantById(@PathVariable int id) {
+        logger.info("Fetching restaurant with id: {}", id);
+
         Optional<ApiRestaurantDto> restaurantWithRatingOptional = restaurantService
                 .findRestaurantWithAverageRatingById(id);
-        if (!restaurantWithRatingOptional.isPresent())
+        if (!restaurantWithRatingOptional.isPresent()) {
+            logger.warn("Restaurant with id {} not found", id);
             throw new ResourceNotFoundException(String.format("Restaurant with id %d not found", id));
+        }
+        logger.info("Restaurant found: {}", restaurantWithRatingOptional.get());
         return ResponseBuilder.buildOkResponse(restaurantWithRatingOptional.get());
     }
 
     @GetMapping
     public ResponseEntity<Object> getAllRestaurants(@RequestParam(name = "rating", required = false) Integer rating,
             @RequestParam(name = "price_range", required = false) Integer priceRange) {
+        logger.info("Fetching all restaurants with rating: {} and price range: {}", rating, priceRange);
         return ResponseBuilder
                 .buildOkResponse(restaurantService.findRestaurantsByRatingAndPriceRange(rating, priceRange));
     }
