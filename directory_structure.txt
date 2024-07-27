@@ -83,7 +83,6 @@
 │   │   │               └── util
 │   │   │                   └── ResponseBuilder.java
 │   │   └── resources
-│   │       ├── application-test.properties
 │   │       ├── application.properties
 │   │       └── templates
 │   │           ├── editRestaurant.html
@@ -92,24 +91,21 @@
 │   │           ├── newRestaurant.html
 │   │           └── restaurant.html
 │   └── test
-│       └── java
-│           └── com
-│               └── rocketFoodDelivery
-│                   └── rocketFood
-│                       ├── api
-│                       │   ├── AuthControllerTest.java
-│                       │   └── RestaurantApiControllerTest.java
-│                       ├── database
-│                       └── repository
-│                           └── RestaurantRepositoryTest.java
+│       ├── java
+│       │   └── com
+│       │       └── rocketFoodDelivery
+│       │           └── rocketFood
+│       │               └── api
+│       │                   ├── AuthControllerTest.java
+│       │                   └── RestaurantApiControllerTest.java
+│       └── resources
+│           └── application-test.properties
 └── target
     ├── classes
-    │   ├── application-test.properties
     │   ├── application.properties
     │   ├── com
     │   │   └── rocketFoodDelivery
     │   │       └── rocketFood
-    │   │           ├── DataSeeder.class
     │   │           ├── RocketFoodApplication.class
     │   │           ├── controller
     │   │           │   ├── GlobalExceptionHandler.class
@@ -129,6 +125,7 @@
     │   │           │   ├── ApiProductForOrderApiDto.class
     │   │           │   ├── ApiResponseDto.class
     │   │           │   ├── ApiResponseStatusDto.class
+    │   │           │   ├── ApiRestaurantDto$ApiRestaurantDtoBuilder.class
     │   │           │   ├── ApiRestaurantDto.class
     │   │           │   ├── ApiRestaurantRatingDto.class
     │   │           │   ├── AuthRequestDTO.class
@@ -214,23 +211,15 @@
     │           └── default-testCompile
     │               ├── createdFiles.lst
     │               └── inputFiles.lst
-    ├── surefire
-    │   ├── surefire-20240726154244736_1tmp
-    │   ├── surefire_0-20240726154244736_2tmp
-    │   └── surefirebooter-20240726154244736_3.jar
     ├── surefire-reports
-    │   ├── 2024-07-26T15-42-44_606-jvmRun1-commands.bin
-    │   ├── 2024-07-26T15-42-44_606-jvmRun1-events.bin
-    │   ├── TEST-com.rocketFoodDelivery.rocketFood.api.AuthControllerTest.xml
     │   ├── TEST-com.rocketFoodDelivery.rocketFood.api.RestaurantApiControllerTest.xml
-    │   ├── com.rocketFoodDelivery.rocketFood.api.AuthControllerTest.txt
     │   └── com.rocketFoodDelivery.rocketFood.api.RestaurantApiControllerTest.txt
     └── test-classes
+        ├── application-test.properties
         └── com
             └── rocketFoodDelivery
                 └── rocketFood
                     └── api
-                        ├── AuthControllerTest.class
                         └── RestaurantApiControllerTest.class
 
-57 directories, 176 files
+55 directories, 167 files
