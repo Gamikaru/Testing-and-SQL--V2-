@@ -47,4 +47,9 @@ public class Order {
     @Min(1)
     @Max(5)
     private int restaurant_rating;
+
+    // Explicit getter method
+    public int getRestaurantRating() {
+        return this.restaurant_rating;
+    }
 }

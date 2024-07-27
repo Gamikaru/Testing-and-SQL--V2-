@@ -1,16 +1,14 @@
 package com.rocketFoodDelivery.rocketFood.service;
 
-import com.rocketFoodDelivery.rocketFood.models.UserEntity;
-import com.rocketFoodDelivery.rocketFood.models.Address;
 import com.rocketFoodDelivery.rocketFood.dtos.ApiAddressDto;
-import com.rocketFoodDelivery.rocketFood.repository.AddressRepository;
-import com.rocketFoodDelivery.rocketFood.repository.UserRepository;
-import com.rocketFoodDelivery.rocketFood.repository.RestaurantRepository;
-
 import com.rocketFoodDelivery.rocketFood.dtos.ApiCreateRestaurantDto;
 import com.rocketFoodDelivery.rocketFood.dtos.ApiRestaurantDto;
+import com.rocketFoodDelivery.rocketFood.models.Address;
 import com.rocketFoodDelivery.rocketFood.models.Restaurant;
-import com.rocketFoodDelivery.rocketFood.repository.*;
+import com.rocketFoodDelivery.rocketFood.models.UserEntity;
+import com.rocketFoodDelivery.rocketFood.repository.AddressRepository;
+import com.rocketFoodDelivery.rocketFood.repository.RestaurantRepository;
+import com.rocketFoodDelivery.rocketFood.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,25 +21,17 @@ import java.util.Optional;
 
 @Service
 public class RestaurantService {
+
     private final RestaurantRepository restaurantRepository;
-    private final ProductRepository productRepository;
-    private final OrderRepository orderRepository;
-    private final ProductOrderRepository productOrderRepository;
     private final UserRepository userRepository;
     private final AddressRepository addressRepository;
 
     @Autowired
     public RestaurantService(
             RestaurantRepository restaurantRepository,
-            ProductRepository productRepository,
-            OrderRepository orderRepository,
-            ProductOrderRepository productOrderRepository,
             UserRepository userRepository,
             AddressRepository addressRepository) {
         this.restaurantRepository = restaurantRepository;
-        this.productRepository = productRepository;
-        this.orderRepository = orderRepository;
-        this.productOrderRepository = productOrderRepository;
         this.userRepository = userRepository;
         this.addressRepository = addressRepository;
     }
@@ -50,19 +40,6 @@ public class RestaurantService {
         return restaurantRepository.findAll();
     }
 
-    /**
-     * Retrieves a restaurant with its details, including the average rating, based
-     * on the provided restaurant ID.
-     *
-     * @param id The unique identifier of the restaurant to retrieve.
-     * @return An Optional containing a RestaurantDto with details such as id, name,
-     *         price range, and average rating.
-     *         If the restaurant with the given id is not found, an empty Optional
-     *         is returned.
-     *
-     * @see RestaurantRepository#findRestaurantWithAverageRatingById(int) for the
-     *      raw query details from the repository.
-     */
     public Optional<ApiRestaurantDto> findRestaurantWithAverageRatingById(int id) {
         List<Object[]> restaurant = restaurantRepository.findRestaurantWithAverageRatingById(id);
 
@@ -81,16 +58,6 @@ public class RestaurantService {
         }
     }
 
-    /**
-     * Finds restaurants based on the provided rating and price range.
-     *
-     * @param rating     The rating for filtering the restaurants.
-     * @param priceRange The price range for filtering the restaurants.
-     * @return A list of ApiRestaurantDto objects representing the selected
-     *         restaurants.
-     *         Each object contains the restaurant's ID, name, price range, and a
-     *         rounded-up average rating.
-     */
     public List<ApiRestaurantDto> findRestaurantsByRatingAndPriceRange(Integer rating, Integer priceRange) {
         List<Object[]> restaurants = restaurantRepository.findRestaurantsByRatingAndPriceRange(rating, priceRange);
 
@@ -114,15 +81,6 @@ public class RestaurantService {
         return restaurantDtos;
     }
 
-    /**
-     * Creates a new restaurant and returns its information.
-     *
-     * @param restaurantDto The data for the new restaurant.
-     * @return An Optional containing the created restaurant's information as an
-     *         ApiCreateRestaurantDto,
-     *         or Optional.empty() if the user with the provided user ID does not
-     *         exist or if an error occurs during creation.
-     */
     @Transactional
     public Optional<ApiCreateRestaurantDto> createRestaurant(ApiCreateRestaurantDto restaurantDto) {
         Optional<UserEntity> userOptional = userRepository.findById(restaurantDto.getUserId());
@@ -146,37 +104,19 @@ public class RestaurantService {
                 .phone(restaurantDto.getPhone())
                 .email(restaurantDto.getEmail())
                 .build();
-        restaurantRepository.save(restaurant);
+        restaurant = restaurantRepository.save(restaurant); // Updated this line
         restaurantDto.setId(restaurant.getId());
 
-        // Log the persisted data
         System.out.println("Persisted Restaurant: " + restaurant);
         System.out.println("Persisted Address: " + address);
 
         return Optional.of(restaurantDto);
     }
 
-    /**
-     * Finds a restaurant by its ID.
-     *
-     * @param id The ID of the restaurant to retrieve.
-     * @return An Optional containing the restaurant with the specified ID,
-     *         or Optional.empty() if no restaurant is found.
-     */
     public Optional<Restaurant> findById(int id) {
         return restaurantRepository.findById(id);
     }
 
-    /**
-     * Updates an existing restaurant by ID with the provided data.
-     *
-     * @param id                   The ID of the restaurant to update.
-     * @param updatedRestaurantDto The updated data for the restaurant.
-     * @return An Optional containing the updated restaurant's information as an
-     *         ApiCreateRestaurantDto,
-     *         or Optional.empty() if the restaurant with the specified ID is not
-     *         found or if an error occurs during the update.
-     */
     @Transactional
     public Optional<ApiCreateRestaurantDto> updateRestaurant(int id, ApiCreateRestaurantDto updatedRestaurantDto) {
         System.out.println("Received update request for restaurant id: " + id);
@@ -210,14 +150,10 @@ public class RestaurantService {
         return Optional.of(updatedRestaurantDto);
     }
 
-    /**
-     * Deletes a restaurant along with its associated data, including its product
-     * orders, orders and products.
-     *
-     * @param restaurantId The ID of the restaurant to delete.
-     */
     @Transactional
     public void deleteRestaurant(int restaurantId) {
+        System.out.println("Deleting restaurant with id: " + restaurantId);
         restaurantRepository.deleteRestaurantById(restaurantId);
+        System.out.println("Deleted restaurant with id: " + restaurantId);
     }
 }
