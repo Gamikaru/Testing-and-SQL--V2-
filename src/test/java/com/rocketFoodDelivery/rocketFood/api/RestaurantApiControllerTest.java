@@ -218,11 +218,13 @@ public class RestaurantApiControllerTest {
         @WithMockUser
         public void testFetchRestaurantByInvalidId() throws Exception {
                 Mockito.when(restaurantService.getRestaurantById(999))
-                                .thenThrow(new ResourceNotFoundException("Restaurant with id 999 not found"));
+                                .thenThrow(new ResourceNotFoundException("Restaurant with id 999 not found")); // Change
+                                                                                                               // here
 
                 mockMvc.perform(get("/api/restaurants/{id}", 999))
-                                .andExpect(status().isNotFound())
-                                .andExpect(jsonPath("$.message", is("Restaurant with id 999 not found")));
+                                .andExpect(status().isNotFound()) // Ensure this line expects 404
+                                .andExpect(jsonPath("$.message", is("Restaurant with id 999 not found"))); // Change
+                                                                                                           // here
         }
 
         @Test
@@ -233,7 +235,12 @@ public class RestaurantApiControllerTest {
                                 .phone("098-765-4321")
                                 .email("updated@restaurant.com")
                                 .priceRange(3)
-                                .address(validRestaurantDto.getAddress())
+                                .address(ApiAddressDto.builder()
+                                                .streetAddress("123 Main St")
+                                                .city("Springfield")
+                                                .postalCode("12345")
+                                                .build())
+                                .userId(1) // Ensure this field is populated
                                 .build();
 
                 ApiRestaurantDto updatedRestaurant = ApiRestaurantDto.builder()
@@ -295,7 +302,12 @@ public class RestaurantApiControllerTest {
                                 .phone("098-765-4321")
                                 .email("updated@restaurant.com")
                                 .priceRange(3)
-                                .address(validRestaurantDto.getAddress())
+                                .address(ApiAddressDto.builder()
+                                                .streetAddress("123 Main St")
+                                                .city("Springfield")
+                                                .postalCode("12345")
+                                                .build())
+                                .userId(1) // Ensure this field is populated
                                 .build();
 
                 Mockito.when(restaurantService.updateRestaurant(Mockito.eq(999),
@@ -323,12 +335,13 @@ public class RestaurantApiControllerTest {
         @Test
         @WithMockUser
         public void testDeleteRestaurantWithInvalidId() throws Exception {
-                Mockito.doThrow(new ResourceNotFoundException("Restaurant with id 999 not found"))
+                Mockito.doThrow(new ResourceNotFoundException("Restaurant with id 999 not found")) // Change here
                                 .when(restaurantService).deleteRestaurant(999);
 
                 mockMvc.perform(delete("/api/restaurants/{id}", 999))
-                                .andExpect(status().isNotFound())
-                                .andExpect(jsonPath("$.message", is("Restaurant with id 999 not found")));
+                                .andExpect(status().isNotFound()) // Ensure this line expects 404
+                                .andExpect(jsonPath("$.message", is("Restaurant with id 999 not found"))); // Change
+                                                                                                           // here
         }
 
         @Configuration

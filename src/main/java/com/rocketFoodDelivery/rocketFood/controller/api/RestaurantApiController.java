@@ -123,4 +123,17 @@ public class RestaurantApiController {
         log.error("Validation error: {}", ex.getMessage());
         return ResponseBuilder.buildBadRequestResponse("Invalid or missing parameters");
     }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<?> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        log.error("Resource not found error: {}", ex.getMessage());
+        return ResponseBuilder.buildErrorResponse(ex.getMessage(), 404); // Change here
+    }
+
+    // Necessary changes in other files:
+    // 1. Change the return type of the method `getRestaurantsByRatingAndPriceRange`
+    // in the `RestaurantService` class to `List<ApiRestaurantDto>`.
+    // 2. Change the return type of the method `getRestaurantsByRatingAndPriceRange`
+    // in the `RestaurantRepository` class to `List<Object[]>`.
+
 }
