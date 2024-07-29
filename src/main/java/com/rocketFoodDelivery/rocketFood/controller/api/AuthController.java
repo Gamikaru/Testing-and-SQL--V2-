@@ -1,80 +1,79 @@
 package com.rocketFoodDelivery.rocketFood.controller.api;
 
-import com.rocketFoodDelivery.rocketFood.dtos.AuthRequestDTO;
+import com.rocketFoodDelivery.rocketFood.service.AuthService;
+import com.rocketFoodDelivery.rocketFood.dtos.AuthRequestDto;
 import com.rocketFoodDelivery.rocketFood.dtos.AuthResponseErrorDto;
 import com.rocketFoodDelivery.rocketFood.dtos.AuthResponseSuccessDto;
-import com.rocketFoodDelivery.rocketFood.models.Courier;
-import com.rocketFoodDelivery.rocketFood.models.Customer;
 import com.rocketFoodDelivery.rocketFood.models.UserEntity;
-import com.rocketFoodDelivery.rocketFood.repository.CourierRepository;
-import com.rocketFoodDelivery.rocketFood.repository.CustomerRepository;
 import com.rocketFoodDelivery.rocketFood.security.JwtUtil;
-import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
+import org.springframework.http.HttpStatus;
 
 @RestController
+@RequestMapping("/api/auth")
+@Slf4j
 public class AuthController {
 
-    @Autowired
-    private AuthenticationManager authManager;
+    private final AuthenticationManager authManager;
+    private final JwtUtil jwtUtil;
+    private final AuthService authService;
 
     @Autowired
-    private JwtUtil jwtUtil;
-
-    private final CourierRepository courierRepository;
-    private final CustomerRepository customerRepository;
-
-    public AuthController(CourierRepository courierRepository, CustomerRepository customerRepository) {
-        this.courierRepository = courierRepository;
-        this.customerRepository = customerRepository;
+    public AuthController(AuthenticationManager authManager, JwtUtil jwtUtil, AuthService authService) {
+        this.authManager = authManager;
+        this.jwtUtil = jwtUtil;
+        this.authService = authService;
     }
 
-    /**
-     * Authenticate the user and return an appropriate response.
-     *
-     * @param request The authentication request containing email and password.
-     * @return ResponseEntity containing either the success or error DTO.
-     */
-    @PostMapping("/api/auth")
-    public ResponseEntity<?> authenticate(@RequestBody @Valid AuthRequestDTO request) {
+    @PostMapping("/login")
+    public ResponseEntity<?> authenticate(@RequestBody @Valid AuthRequestDto request) {
+        log.info("Attempting authentication for user: {}", request.getEmail());
+
         try {
-            // Log attempt to authenticate user
-            System.out.println("Attempting authentication for user: " + request.getEmail());
-
-            // Authenticate user
             Authentication authentication = authManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.getEmail(), request.getPassword()));
-
-            // Retrieve authenticated user
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
             UserEntity user = (UserEntity) authentication.getPrincipal();
-
-            // Generate JWT access token
             String accessToken = jwtUtil.generateAccessToken(user);
 
-            // Prepare successful response
-            AuthResponseSuccessDto response = new AuthResponseSuccessDto();
-            response.setSuccess(true);
-            response.setAccessToken(accessToken);
+            AuthResponseSuccessDto response = buildSuccessResponse(user, accessToken);
 
-            // Log success and return response
-            System.out.println("Authentication successful for user: " + user.getUsername());
+            log.info("Authentication successful for user: {}", user.getEmail());
             return ResponseEntity.ok(response);
-        } catch (BadCredentialsException e) {
-            // Log failure and prepare error response
-            System.out.println("Authentication failed for user: " + request.getEmail());
-            AuthResponseErrorDto response = new AuthResponseErrorDto();
-            response.setSuccess(false);
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        } catch (BadCredentialsException | UsernameNotFoundException e) {
+            log.error("Authentication failed for user: {}", request.getEmail());
+            return buildErrorResponse("Authentication failed. Please check your credentials.", HttpStatus.UNAUTHORIZED);
+        } catch (Exception e) {
+            log.error("Unexpected error during authentication for user: {}", request.getEmail(), e);
+            return buildErrorResponse("An unexpected error occurred.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private AuthResponseSuccessDto buildSuccessResponse(UserEntity user, String accessToken) {
+        return AuthResponseSuccessDto.builder()
+                .success(true)
+                .accessToken(accessToken)
+                .userId(user.getId())
+                .customerId(user.getCustomerId() != null ? user.getCustomerId() : 0)
+                .courierId(user.getCourierId() != null ? user.getCourierId() : 0)
+                .build();
+    }
+
+    private ResponseEntity<AuthResponseErrorDto> buildErrorResponse(String message, HttpStatus status) {
+        AuthResponseErrorDto errorResponse = AuthResponseErrorDto.builder()
+                .success(false)
+                .message(message)
+                .build();
+        return ResponseEntity.status(status).body(errorResponse);
     }
 }

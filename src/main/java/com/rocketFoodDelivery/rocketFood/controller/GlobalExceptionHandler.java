@@ -1,9 +1,12 @@
 package com.rocketFoodDelivery.rocketFood.controller;
 
 import com.rocketFoodDelivery.rocketFood.dtos.ApiErrorDto;
+import com.rocketFoodDelivery.rocketFood.dtos.ApiResponseStatusDto;
 import com.rocketFoodDelivery.rocketFood.exception.BadRequestException;
 import com.rocketFoodDelivery.rocketFood.exception.ResourceNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import com.rocketFoodDelivery.rocketFood.exception.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -46,6 +49,27 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponseStatusDto> handleMethodArgumentNotValidException(
+            MethodArgumentNotValidException ex) {
+        log.error("Validation error: {}", ex.getMessage(), ex);
+        ApiResponseStatusDto response = ApiResponseStatusDto.builder()
+                .success(false)
+                .message("Invalid or missing parameters")
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler({ BadCredentialsException.class, UsernameNotFoundException.class })
+    public ResponseEntity<ApiResponseStatusDto> handleAuthenticationException(Exception ex) {
+        log.error("Authentication error: {}", ex.getMessage(), ex);
+        ApiResponseStatusDto response = ApiResponseStatusDto.builder()
+                .success(false)
+                .message("Authentication failed. Please check your credentials.")
+                .build();
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorDto> handleGenericException(Exception ex) {
         log.error("Unexpected error: {}", ex.getMessage(), ex);
@@ -54,10 +78,5 @@ public class GlobalExceptionHandler {
                 .details(ex.getMessage())
                 .build();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
-        return ResponseBuilder.buildBadRequestResponse("Invalid or missing parameters");
     }
 }

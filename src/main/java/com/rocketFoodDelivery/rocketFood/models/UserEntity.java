@@ -21,25 +21,33 @@ import java.util.List;
 @Entity
 @Table(name = "users")
 public class UserEntity implements UserDetails {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     private String name;
+
     @Column(unique = true)
     private String email;
+
     private String password;
 
-    @Transient // This annotation indicates that this field is not part of the database schema
+    @Transient
     private boolean isEmployee;
+
+    private Integer customerId;
+    private Integer courierId;
 
     @JsonIgnore
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<GrantedAuthority> authorities = new ArrayList<>();
 
-        if (isEmployee()) {
+        if (isEmployee) {
             authorities.add(new SimpleGrantedAuthority("ROLE_EMPLOYEE"));
+        } else {
+            authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
         }
         return authorities;
     }
@@ -76,5 +84,13 @@ public class UserEntity implements UserDetails {
 
     public boolean isEmployee() {
         return isEmployee;
+    }
+
+    public Integer getCustomerId() {
+        return customerId;
+    }
+
+    public Integer getCourierId() {
+        return courierId;
     }
 }
