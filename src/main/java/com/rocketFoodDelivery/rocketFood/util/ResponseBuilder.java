@@ -27,8 +27,8 @@ public class ResponseBuilder {
 
     public static ResponseEntity<ApiResponseDto> buildNotFoundResponse(String message) {
         ApiResponseDto response = ApiResponseDto.builder()
-                .message("Resource not found")
-                .data(message)
+                .message(message)
+                .data(null)
                 .build();
         log.info("Building NotFound response: {}", response);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
