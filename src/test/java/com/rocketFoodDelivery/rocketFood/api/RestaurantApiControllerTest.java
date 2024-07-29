@@ -7,7 +7,6 @@ import com.rocketFoodDelivery.rocketFood.dtos.ApiCreateRestaurantDto;
 import com.rocketFoodDelivery.rocketFood.dtos.ApiRestaurantDto;
 import com.rocketFoodDelivery.rocketFood.exception.ResourceNotFoundException;
 import com.rocketFoodDelivery.rocketFood.models.Address;
-import com.rocketFoodDelivery.rocketFood.models.Restaurant;
 import com.rocketFoodDelivery.rocketFood.models.UserEntity;
 import com.rocketFoodDelivery.rocketFood.service.RestaurantService;
 import org.junit.jupiter.api.AfterEach;
@@ -49,28 +48,49 @@ public class RestaurantApiControllerTest {
         @Autowired
         private ObjectMapper objectMapper;
 
+        private static final String BASE_URI = "/api/restaurants";
+        private static final String VALID_PHONE = "123-456-7890";
+        private static final String INVALID_PHONE = "invalid-phone";
+        private static final String VALID_EMAIL = "test@restaurant.com";
+        private static final String INVALID_EMAIL = "invalid-email";
+        private static final String VALID_NAME = "Test Restaurant";
+        private static final String UPDATED_NAME = "Updated Restaurant";
+        private static final String STREET_ADDRESS = "123 Main St";
+        private static final String CITY = "Springfield";
+        private static final String POSTAL_CODE = "12345";
+
         private ApiCreateRestaurantDto validRestaurantDto;
         private Address validAddress;
         private UserEntity validUser;
 
         @BeforeEach
         public void setUp() {
-                validAddress = Address.builder()
-                                .streetAddress("123 Main St")
-                                .city("Springfield")
-                                .postalCode("12345")
-                                .build();
+                validAddress = createValidAddress();
+                validUser = createValidUser();
+                validRestaurantDto = createValidRestaurantDto();
+        }
 
-                validUser = UserEntity.builder()
+        private Address createValidAddress() {
+                return Address.builder()
+                                .streetAddress(STREET_ADDRESS)
+                                .city(CITY)
+                                .postalCode(POSTAL_CODE)
+                                .build();
+        }
+
+        private UserEntity createValidUser() {
+                return UserEntity.builder()
                                 .name("Test User")
                                 .email("test@user.com")
                                 .password("password")
                                 .build();
+        }
 
-                validRestaurantDto = ApiCreateRestaurantDto.builder()
-                                .name("Test Restaurant")
-                                .phone("123-456-7890")
-                                .email("test@restaurant.com")
+        private ApiCreateRestaurantDto createValidRestaurantDto() {
+                return ApiCreateRestaurantDto.builder()
+                                .name(VALID_NAME)
+                                .phone(VALID_PHONE)
+                                .email(VALID_EMAIL)
                                 .priceRange(2)
                                 .userId(validUser.getId())
                                 .address(ApiAddressDto.builder()
@@ -92,13 +112,13 @@ public class RestaurantApiControllerTest {
                                 .id(1)
                                 .name(validRestaurantDto.getName())
                                 .priceRange(validRestaurantDto.getPriceRange())
-                                .rating(5) // Placeholder rating
+                                .rating(5)
                                 .build();
 
                 Mockito.when(restaurantService.createRestaurant(Mockito.any(ApiCreateRestaurantDto.class)))
                                 .thenReturn(createdRestaurant);
 
-                mockMvc.perform(post("/api/restaurants")
+                mockMvc.perform(post(BASE_URI)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(validRestaurantDto)))
                                 .andExpect(status().isCreated())
@@ -111,11 +131,11 @@ public class RestaurantApiControllerTest {
         @WithMockUser
         public void testCreateRestaurantWithMissingFields() throws Exception {
                 ApiCreateRestaurantDto incompleteRestaurantDto = ApiCreateRestaurantDto.builder()
-                                .name("Test Restaurant")
-                                .phone("123-456-7890")
+                                .name(VALID_NAME)
+                                .phone(VALID_PHONE)
                                 .build();
 
-                mockMvc.perform(post("/api/restaurants")
+                mockMvc.perform(post(BASE_URI)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(incompleteRestaurantDto)))
                                 .andExpect(status().isBadRequest())
@@ -127,13 +147,13 @@ public class RestaurantApiControllerTest {
         public void testCreateRestaurantWithInvalidData() throws Exception {
                 ApiCreateRestaurantDto invalidRestaurantDto = ApiCreateRestaurantDto.builder()
                                 .name("")
-                                .phone("invalid-phone")
-                                .email("invalid-email")
+                                .phone(INVALID_PHONE)
+                                .email(INVALID_EMAIL)
                                 .priceRange(2)
                                 .address(validRestaurantDto.getAddress())
                                 .build();
 
-                mockMvc.perform(post("/api/restaurants")
+                mockMvc.perform(post(BASE_URI)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(invalidRestaurantDto)))
                                 .andExpect(status().isBadRequest())
@@ -152,7 +172,7 @@ public class RestaurantApiControllerTest {
 
                 Mockito.when(restaurantService.getRestaurants(null, null)).thenReturn(List.of(restaurantDto));
 
-                mockMvc.perform(get("/api/restaurants"))
+                mockMvc.perform(get(BASE_URI))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data", hasSize(1)))
                                 .andExpect(jsonPath("$.data[0].name", is(restaurantDto.getName())))
@@ -162,7 +182,7 @@ public class RestaurantApiControllerTest {
         @Test
         @WithMockUser
         public void testFetchRestaurantsWithRatingFilter() throws Exception {
-                mockMvc.perform(get("/api/restaurants").param("rating", "5"))
+                mockMvc.perform(get(BASE_URI).param("rating", "5"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data", is(empty())));
         }
@@ -179,7 +199,7 @@ public class RestaurantApiControllerTest {
 
                 Mockito.when(restaurantService.getRestaurants(null, 2)).thenReturn(List.of(restaurantDto));
 
-                mockMvc.perform(get("/api/restaurants").param("priceRange", "2"))
+                mockMvc.perform(get(BASE_URI).param("priceRange", "2"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data", hasSize(1)))
                                 .andExpect(jsonPath("$.data[0].name", is(restaurantDto.getName())))
@@ -189,7 +209,7 @@ public class RestaurantApiControllerTest {
         @Test
         @WithMockUser
         public void testFetchRestaurantsWithRatingAndPriceRangeFilters() throws Exception {
-                mockMvc.perform(get("/api/restaurants")
+                mockMvc.perform(get(BASE_URI)
                                 .param("rating", "5")
                                 .param("priceRange", "2"))
                                 .andExpect(status().isOk())
@@ -208,7 +228,7 @@ public class RestaurantApiControllerTest {
 
                 Mockito.when(restaurantService.getRestaurantById(1)).thenReturn(restaurantDto);
 
-                mockMvc.perform(get("/api/restaurants/{id}", 1))
+                mockMvc.perform(get(BASE_URI + "/{id}", 1))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.data.name", is(restaurantDto.getName())))
                                 .andExpect(jsonPath("$.data.price_range", is(restaurantDto.getPriceRange())));
@@ -218,29 +238,27 @@ public class RestaurantApiControllerTest {
         @WithMockUser
         public void testFetchRestaurantByInvalidId() throws Exception {
                 Mockito.when(restaurantService.getRestaurantById(999))
-                                .thenThrow(new ResourceNotFoundException("Restaurant with id 999 not found")); // Change
-                                                                                                               // here
+                                .thenThrow(new ResourceNotFoundException("Restaurant with id 999 not found"));
 
-                mockMvc.perform(get("/api/restaurants/{id}", 999))
-                                .andExpect(status().isNotFound()) // Ensure this line expects 404
-                                .andExpect(jsonPath("$.message", is("Restaurant with id 999 not found"))); // Change
-                                                                                                           // here
+                mockMvc.perform(get(BASE_URI + "/{id}", 999))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message", is("Restaurant with id 999 not found")));
         }
 
         @Test
         @WithMockUser
         public void testUpdateRestaurantWithValidData() throws Exception {
                 ApiCreateRestaurantDto updatedRestaurantDto = ApiCreateRestaurantDto.builder()
-                                .name("Updated Restaurant")
+                                .name(UPDATED_NAME)
                                 .phone("098-765-4321")
                                 .email("updated@restaurant.com")
                                 .priceRange(3)
                                 .address(ApiAddressDto.builder()
-                                                .streetAddress("123 Main St")
-                                                .city("Springfield")
-                                                .postalCode("12345")
+                                                .streetAddress(STREET_ADDRESS)
+                                                .city(CITY)
+                                                .postalCode(POSTAL_CODE)
                                                 .build())
-                                .userId(1) // Ensure this field is populated
+                                .userId(1)
                                 .build();
 
                 ApiRestaurantDto updatedRestaurant = ApiRestaurantDto.builder()
@@ -254,7 +272,7 @@ public class RestaurantApiControllerTest {
                                 Mockito.any(ApiCreateRestaurantDto.class)))
                                 .thenReturn(updatedRestaurant);
 
-                mockMvc.perform(put("/api/restaurants/{id}", 1)
+                mockMvc.perform(put(BASE_URI + "/{id}", 1)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(updatedRestaurantDto)))
                                 .andExpect(status().isOk())
@@ -266,10 +284,10 @@ public class RestaurantApiControllerTest {
         @WithMockUser
         public void testUpdateRestaurantWithMissingFields() throws Exception {
                 ApiCreateRestaurantDto incompleteRestaurantDto = ApiCreateRestaurantDto.builder()
-                                .name("Updated Restaurant")
+                                .name(UPDATED_NAME)
                                 .build();
 
-                mockMvc.perform(put("/api/restaurants/{id}", 1)
+                mockMvc.perform(put(BASE_URI + "/{id}", 1)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(incompleteRestaurantDto)))
                                 .andExpect(status().isBadRequest())
@@ -281,13 +299,13 @@ public class RestaurantApiControllerTest {
         public void testUpdateRestaurantWithInvalidData() throws Exception {
                 ApiCreateRestaurantDto invalidRestaurantDto = ApiCreateRestaurantDto.builder()
                                 .name("")
-                                .phone("invalid-phone")
-                                .email("invalid-email")
+                                .phone(INVALID_PHONE)
+                                .email(INVALID_EMAIL)
                                 .priceRange(2)
                                 .address(validRestaurantDto.getAddress())
                                 .build();
 
-                mockMvc.perform(put("/api/restaurants/{id}", 1)
+                mockMvc.perform(put(BASE_URI + "/{id}", 1)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(invalidRestaurantDto)))
                                 .andExpect(status().isBadRequest())
@@ -298,23 +316,23 @@ public class RestaurantApiControllerTest {
         @WithMockUser
         public void testUpdateRestaurantWithNonExistingId() throws Exception {
                 ApiCreateRestaurantDto updatedRestaurantDto = ApiCreateRestaurantDto.builder()
-                                .name("Updated Restaurant")
+                                .name(UPDATED_NAME)
                                 .phone("098-765-4321")
                                 .email("updated@restaurant.com")
                                 .priceRange(3)
                                 .address(ApiAddressDto.builder()
-                                                .streetAddress("123 Main St")
-                                                .city("Springfield")
-                                                .postalCode("12345")
+                                                .streetAddress(STREET_ADDRESS)
+                                                .city(CITY)
+                                                .postalCode(POSTAL_CODE)
                                                 .build())
-                                .userId(1) // Ensure this field is populated
+                                .userId(1)
                                 .build();
 
                 Mockito.when(restaurantService.updateRestaurant(Mockito.eq(999),
                                 Mockito.any(ApiCreateRestaurantDto.class)))
                                 .thenThrow(new ResourceNotFoundException("Restaurant with id 999 not found"));
 
-                mockMvc.perform(put("/api/restaurants/{id}", 999)
+                mockMvc.perform(put(BASE_URI + "/{id}", 999)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(updatedRestaurantDto)))
                                 .andExpect(status().isNotFound())
@@ -326,7 +344,7 @@ public class RestaurantApiControllerTest {
         public void testDeleteRestaurantWithValidId() throws Exception {
                 Mockito.doNothing().when(restaurantService).deleteRestaurant(1);
 
-                mockMvc.perform(delete("/api/restaurants/{id}", 1))
+                mockMvc.perform(delete(BASE_URI + "/{id}", 1))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.message", is("Success")))
                                 .andExpect(jsonPath("$.data", is("Restaurant deleted successfully")));
@@ -335,13 +353,12 @@ public class RestaurantApiControllerTest {
         @Test
         @WithMockUser
         public void testDeleteRestaurantWithInvalidId() throws Exception {
-                Mockito.doThrow(new ResourceNotFoundException("Restaurant with id 999 not found")) // Change here
+                Mockito.doThrow(new ResourceNotFoundException("Restaurant with id 999 not found"))
                                 .when(restaurantService).deleteRestaurant(999);
 
-                mockMvc.perform(delete("/api/restaurants/{id}", 999))
-                                .andExpect(status().isNotFound()) // Ensure this line expects 404
-                                .andExpect(jsonPath("$.message", is("Restaurant with id 999 not found"))); // Change
-                                                                                                           // here
+                mockMvc.perform(delete(BASE_URI + "/{id}", 999))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message", is("Restaurant with id 999 not found")));
         }
 
         @Configuration
