@@ -1,120 +1,126 @@
 package com.rocketFoodDelivery.rocketFood.controller.api;
 
 import com.rocketFoodDelivery.rocketFood.dtos.ApiCreateRestaurantDto;
-import com.rocketFoodDelivery.rocketFood.dtos.ApiResponseDto;
 import com.rocketFoodDelivery.rocketFood.dtos.ApiRestaurantDto;
-import com.rocketFoodDelivery.rocketFood.models.Restaurant;
+import com.rocketFoodDelivery.rocketFood.exception.ValidationException;
+import com.rocketFoodDelivery.rocketFood.exception.ResourceNotFoundException;
 import com.rocketFoodDelivery.rocketFood.service.RestaurantService;
 import com.rocketFoodDelivery.rocketFood.util.ResponseBuilder;
-import com.rocketFoodDelivery.rocketFood.exception.*;
-
 import jakarta.validation.Valid;
-
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.ObjectError;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
 import java.util.List;
-import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/restaurants")
+@Validated
 public class RestaurantApiController {
 
     private final RestaurantService restaurantService;
 
-    @Autowired
     public RestaurantApiController(RestaurantService restaurantService) {
         this.restaurantService = restaurantService;
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponseDto> createRestaurant(@Valid @RequestBody ApiCreateRestaurantDto restaurantDto,
-            BindingResult bindingResult) {
-        System.out.println("Received request to create restaurant: " + restaurantDto);
-        if (bindingResult.hasErrors()) {
-            List<String> errors = bindingResult.getAllErrors().stream()
-                    .map(ObjectError::getDefaultMessage)
-                    .collect(Collectors.toList());
-            System.out.println("Validation errors: " + errors);
-            return ResponseEntity.badRequest().body(new ApiResponseDto("Validation failed", errors));
+    public ResponseEntity<?> createRestaurant(@RequestBody @Valid ApiCreateRestaurantDto restaurantDto) {
+        log.info("Received request to create restaurant: {}", restaurantDto);
+
+        try {
+            log.info("Validating restaurant data: {}", restaurantDto);
+            ApiRestaurantDto savedRestaurant = restaurantService.createRestaurant(restaurantDto);
+            log.info("Restaurant created successfully: {}", savedRestaurant);
+            return ResponseBuilder.buildResponse("Success", savedRestaurant, 201);
+        } catch (ValidationException ex) {
+            log.error("Validation error: {}", ex.getMessage());
+            return ResponseBuilder.buildBadRequestResponse("Invalid or missing parameters");
+        } catch (Exception ex) {
+            log.error("Exception occurred while saving restaurant: {}", ex.getMessage(), ex);
+            return ResponseBuilder.buildErrorResponse("Internal server error: " + ex.getMessage(), 500);
         }
-        return restaurantService.createRestaurant(restaurantDto)
-                .map(createdRestaurant -> ResponseEntity.status(201)
-                        .body(new ApiResponseDto("Success", createdRestaurant)))
-                .orElseGet(() -> ResponseEntity.badRequest()
-                        .body(new ApiResponseDto("Failed to create restaurant", null)));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponseDto> deleteRestaurant(@PathVariable int id) {
-        System.out.println("Received request to delete restaurant with ID: " + id);
-        Optional<Restaurant> restaurantOptional = restaurantService.findById(id);
-        if (restaurantOptional.isEmpty()) {
-            System.out.println("Restaurant with ID " + id + " not found");
-            return ResponseEntity.status(404)
-                    .body(new ApiResponseDto("Resource not found", "Restaurant with id " + id + " not found"));
-        }
-
-        restaurantService.deleteRestaurant(id);
-        System.out.println("Deleted restaurant with ID: " + id);
-        return ResponseEntity.ok().body(new ApiResponseDto("Restaurant deleted successfully", null));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponseDto> updateRestaurant(@PathVariable("id") int id,
-            @Valid @RequestBody ApiCreateRestaurantDto restaurantUpdateData, BindingResult result) {
-        System.out.println("Received request to update restaurant with ID: " + id);
-        System.out.println("Update data: " + restaurantUpdateData);
-
-        Optional<Restaurant> restaurantOptional = restaurantService.findById(id);
-        if (restaurantOptional.isEmpty()) {
-            System.out.println("Restaurant with ID " + id + " not found");
-            return ResponseEntity.status(404)
-                    .body(new ApiResponseDto("Resource not found", "Restaurant with id " + id + " not found"));
-        }
-
-        if (result.hasErrors()) {
-            List<String> errors = result.getAllErrors().stream()
-                    .map(ObjectError::getDefaultMessage)
-                    .collect(Collectors.toList());
-            System.out.println("Validation errors: " + errors);
-            return ResponseEntity.badRequest().body(new ApiResponseDto("Validation failed", errors));
-        }
-
-        return restaurantService.updateRestaurant(id, restaurantUpdateData)
-                .map(updatedRestaurant -> {
-                    System.out.println("Updated restaurant: " + updatedRestaurant);
-                    return ResponseEntity.ok().body(new ApiResponseDto("Success", updatedRestaurant));
-                })
-                .orElseGet(() -> {
-                    System.out.println("Failed to update restaurant");
-                    return ResponseEntity.badRequest()
-                            .body(new ApiResponseDto("Failed to update restaurant", null));
-                });
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Object> getRestaurantById(@PathVariable int id) {
-        Optional<ApiRestaurantDto> restaurantWithRatingOptional = restaurantService
-                .findRestaurantWithAverageRatingById(id);
-        if (!restaurantWithRatingOptional.isPresent()) {
-            System.out.println("Restaurant with ID " + id + " not found");
-            throw new ResourceNotFoundException(String.format("Restaurant with id %d not found", id));
-        }
-        System.out.println("Retrieved restaurant with ID: " + id);
-        return ResponseBuilder.buildOkResponse(restaurantWithRatingOptional.get());
     }
 
     @GetMapping
-    public ResponseEntity<Object> getAllRestaurants(@RequestParam(name = "rating", required = false) Integer rating,
-            @RequestParam(name = "price_range", required = false) Integer priceRange) {
-        System.out.println(
-                "Received request to get all restaurants with rating: " + rating + " and price range: " + priceRange);
-        return ResponseBuilder
-                .buildOkResponse(restaurantService.findRestaurantsByRatingAndPriceRange(rating, priceRange));
+    public ResponseEntity<?> getRestaurants(@RequestParam(required = false) Integer rating,
+            @RequestParam(required = false) Integer priceRange) {
+        log.info("Fetching restaurants with rating: {} and price range: {}", rating, priceRange);
+
+        try {
+            log.info("Calling service to fetch filtered restaurants.");
+            List<ApiRestaurantDto> restaurants = restaurantService.getRestaurants(rating, priceRange);
+            log.info("Fetched restaurants: {}", restaurants);
+            return ResponseBuilder.buildResponse("Success", restaurants, 200);
+        } catch (Exception ex) {
+            log.error("Exception occurred while fetching restaurants: {}", ex.getMessage());
+            return ResponseBuilder.buildErrorResponse("Internal server error", 500);
+        }
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getRestaurantById(@PathVariable Integer id) {
+        log.info("Fetching restaurant with ID: {}", id);
+
+        try {
+            log.info("Calling service to fetch restaurant by ID.");
+            ApiRestaurantDto restaurant = restaurantService.getRestaurantById(id);
+            log.info("Restaurant details: {}", restaurant);
+            return ResponseBuilder.buildResponse("Success", restaurant, 200);
+        } catch (ResourceNotFoundException ex) {
+            log.error("Restaurant not found with ID: {}", id);
+            return ResponseBuilder.buildNotFoundResponse("Restaurant with id " + id + " not found");
+        } catch (Exception ex) {
+            log.error("Exception occurred while fetching restaurant: {}", ex.getMessage());
+            return ResponseBuilder.buildErrorResponse("Internal server error", 500);
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateRestaurant(@PathVariable Integer id,
+            @RequestBody @Valid ApiCreateRestaurantDto restaurantDto) {
+        log.info("Received request to update restaurant: {}", restaurantDto);
+
+        try {
+            log.info("Validating updated restaurant data: {}", restaurantDto);
+            ApiRestaurantDto updatedRestaurant = restaurantService.updateRestaurant(id, restaurantDto);
+            log.info("Restaurant updated successfully: {}", updatedRestaurant);
+            return ResponseBuilder.buildResponse("Success", updatedRestaurant, 200);
+        } catch (ValidationException ex) {
+            log.error("Validation error: {}", ex.getMessage());
+            return ResponseBuilder.buildBadRequestResponse("Validation failed: " + ex.getMessage());
+        } catch (ResourceNotFoundException ex) {
+            log.error("Restaurant not found with ID: {}", id);
+            return ResponseBuilder.buildNotFoundResponse("Restaurant with id " + id + " not found");
+        } catch (Exception ex) {
+            log.error("Exception occurred while updating restaurant: {}", ex.getMessage());
+            return ResponseBuilder.buildErrorResponse("Internal server error", 500);
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteRestaurant(@PathVariable Integer id) {
+        log.info("Deleting restaurant with ID: {}", id);
+
+        try {
+            log.info("Calling service to delete restaurant.");
+            restaurantService.deleteRestaurant(id);
+            log.info("Restaurant deleted successfully: {}", id);
+            return ResponseBuilder.buildResponse("Success", "Restaurant deleted successfully", 200);
+        } catch (ResourceNotFoundException ex) {
+            log.error("Restaurant not found with ID: {}", id);
+            return ResponseBuilder.buildNotFoundResponse("Restaurant with id " + id + " not found");
+        } catch (Exception ex) {
+            log.error("Exception occurred while deleting restaurant: {}", ex.getMessage());
+            return ResponseBuilder.buildErrorResponse("Internal server error", 500);
+        }
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<?> handleValidationException(ValidationException ex) {
+        log.error("Validation error: {}", ex.getMessage());
+        return ResponseBuilder.buildBadRequestResponse("Invalid or missing parameters");
     }
 }

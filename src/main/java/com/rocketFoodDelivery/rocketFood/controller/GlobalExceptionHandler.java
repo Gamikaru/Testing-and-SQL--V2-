@@ -1,48 +1,63 @@
 package com.rocketFoodDelivery.rocketFood.controller;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.rocketFoodDelivery.rocketFood.dtos.ApiErrorDto;
+import com.rocketFoodDelivery.rocketFood.exception.BadRequestException;
+import com.rocketFoodDelivery.rocketFood.exception.ResourceNotFoundException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import com.rocketFoodDelivery.rocketFood.exception.ValidationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import com.rocketFoodDelivery.rocketFood.util.ResponseBuilder;
 
-import com.rocketFoodDelivery.rocketFood.dtos.ApiErrorDto;
-import com.rocketFoodDelivery.rocketFood.exception.*;
-
-@ControllerAdvice
+@Slf4j
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
-
     @ExceptionHandler(ValidationException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ApiErrorDto> handleValidationException(ValidationException ex) {
-        logger.error("ValidationException occurred: {}", ex.getErrors().getAllErrors().toString());
-        ApiErrorDto response = new ApiErrorDto();
-        response.setError("Validation failed");
-        response.setDetails(ex.getErrors().getAllErrors().toString());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        log.error("Validation error: {}", ex.getMessage(), ex);
+        ApiErrorDto error = ApiErrorDto.builder()
+                .error("Validation failed")
+                .details(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
     public ResponseEntity<ApiErrorDto> handleResourceNotFoundException(ResourceNotFoundException ex) {
-        logger.error("ResourceNotFoundException occurred: {}", ex.getMessage());
-        ApiErrorDto response = new ApiErrorDto();
-        response.setError("Resource not found");
-        response.setDetails(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+        log.error("Resource not found: {}", ex.getMessage(), ex);
+        ApiErrorDto error = ApiErrorDto.builder()
+                .error("Resource not found")
+                .details(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(BadRequestException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ApiErrorDto> handleBadRequestException(BadRequestException ex) {
-        logger.error("BadRequestException occurred: {}", ex.getMessage());
-        ApiErrorDto response = new ApiErrorDto();
-        response.setError("Invalid or missing parameters");
-        response.setDetails(ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+        log.error("Bad request: {}", ex.getMessage(), ex);
+        ApiErrorDto error = ApiErrorDto.builder()
+                .error("Invalid or missing parameters")
+                .details(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiErrorDto> handleGenericException(Exception ex) {
+        log.error("Unexpected error: {}", ex.getMessage(), ex);
+        ApiErrorDto error = ApiErrorDto.builder()
+                .error("Internal server error")
+                .details(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
+        return ResponseBuilder.buildBadRequestResponse("Invalid or missing parameters");
     }
 }

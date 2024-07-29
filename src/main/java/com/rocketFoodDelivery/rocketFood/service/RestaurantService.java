@@ -3,157 +3,182 @@ package com.rocketFoodDelivery.rocketFood.service;
 import com.rocketFoodDelivery.rocketFood.dtos.ApiAddressDto;
 import com.rocketFoodDelivery.rocketFood.dtos.ApiCreateRestaurantDto;
 import com.rocketFoodDelivery.rocketFood.dtos.ApiRestaurantDto;
+import com.rocketFoodDelivery.rocketFood.exception.ResourceNotFoundException;
+import com.rocketFoodDelivery.rocketFood.exception.ValidationException;
 import com.rocketFoodDelivery.rocketFood.models.Address;
 import com.rocketFoodDelivery.rocketFood.models.Restaurant;
 import com.rocketFoodDelivery.rocketFood.models.UserEntity;
 import com.rocketFoodDelivery.rocketFood.repository.AddressRepository;
 import com.rocketFoodDelivery.rocketFood.repository.RestaurantRepository;
 import com.rocketFoodDelivery.rocketFood.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class RestaurantService {
 
     private final RestaurantRepository restaurantRepository;
-    private final UserRepository userRepository;
     private final AddressRepository addressRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    public RestaurantService(
-            RestaurantRepository restaurantRepository,
-            UserRepository userRepository,
-            AddressRepository addressRepository) {
+    public RestaurantService(RestaurantRepository restaurantRepository, AddressRepository addressRepository,
+            UserRepository userRepository) {
         this.restaurantRepository = restaurantRepository;
-        this.userRepository = userRepository;
         this.addressRepository = addressRepository;
-    }
-
-    public List<Restaurant> findAllRestaurants() {
-        return restaurantRepository.findAll();
-    }
-
-    public Optional<ApiRestaurantDto> findRestaurantWithAverageRatingById(int id) {
-        List<Object[]> restaurant = restaurantRepository.findRestaurantWithAverageRatingById(id);
-
-        if (!restaurant.isEmpty()) {
-            Object[] row = restaurant.get(0);
-            int restaurantId = (int) row[0];
-            String name = (String) row[1];
-            int priceRange = (int) row[2];
-            double rating = (row[3] != null) ? ((BigDecimal) row[3]).setScale(1, RoundingMode.HALF_UP).doubleValue()
-                    : 0.0;
-            int roundedRating = (int) Math.ceil(rating);
-            ApiRestaurantDto restaurantDto = new ApiRestaurantDto(restaurantId, name, priceRange, roundedRating);
-            return Optional.of(restaurantDto);
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    public List<ApiRestaurantDto> findRestaurantsByRatingAndPriceRange(Integer rating, Integer priceRange) {
-        List<Object[]> restaurants = restaurantRepository.findRestaurantsByRatingAndPriceRange(rating, priceRange);
-
-        List<ApiRestaurantDto> restaurantDtos = new ArrayList<>();
-
-        for (Object[] row : restaurants) {
-            int restaurantId = (int) row[0];
-            String name = (String) row[1];
-            int range = (int) row[2];
-            double avgRating = (row[3] != null) ? ((BigDecimal) row[3]).setScale(1, RoundingMode.HALF_UP).doubleValue()
-                    : 0.0;
-            int roundedAvgRating = (int) Math.ceil(avgRating);
-            restaurantDtos.add(ApiRestaurantDto.builder()
-                    .id(restaurantId)
-                    .name(name)
-                    .priceRange(range)
-                    .rating(roundedAvgRating)
-                    .build());
-        }
-
-        return restaurantDtos;
+        this.userRepository = userRepository;
     }
 
     @Transactional
-    public Optional<ApiCreateRestaurantDto> createRestaurant(ApiCreateRestaurantDto restaurantDto) {
-        Optional<UserEntity> userOptional = userRepository.findById(restaurantDto.getUserId());
-        if (userOptional.isEmpty()) {
-            return Optional.empty();
+    public ApiRestaurantDto createRestaurant(@Valid ApiCreateRestaurantDto restaurantDto) {
+        log.info("Validating restaurant data: {}", restaurantDto);
+
+        if (restaurantDto.getAddress() == null) {
+            log.error("Address is required");
+            throw new ValidationException("Address is required");
         }
-        UserEntity userEntity = userOptional.get();
 
-        Address address = Address.builder()
-                .streetAddress(restaurantDto.getAddress().getStreetAddress())
-                .city(restaurantDto.getAddress().getCity())
-                .postalCode(restaurantDto.getAddress().getPostalCode())
+        UserEntity userEntity = userRepository.findById(restaurantDto.getUserId())
+                .orElseThrow(() -> new ValidationException("User not found"));
+
+        log.info("Converting DTO to entity: {}", restaurantDto);
+        Address address = mapToAddressEntity(restaurantDto.getAddress());
+        Restaurant restaurant = mapToRestaurantEntity(restaurantDto, address, userEntity);
+
+        log.info("Saving restaurant entity: {}", restaurant);
+        Address savedAddress = addressRepository.save(address);
+        restaurant.setAddress(savedAddress);
+        Restaurant savedRestaurant = restaurantRepository.save(restaurant);
+
+        log.info("Converting saved entity to DTO: {}", savedRestaurant);
+        return mapToApiRestaurantDto(savedRestaurant);
+    }
+
+    public List<ApiRestaurantDto> getRestaurants(Integer rating, Integer priceRange) {
+        log.info("Fetching restaurants with rating: {} and price range: {}", rating, priceRange);
+
+        List<Object[]> restaurantData = restaurantRepository.findRestaurantsByRatingAndPriceRange(rating, priceRange);
+
+        log.info("Converting entities to DTOs: {}", restaurantData);
+        return restaurantData.stream()
+                .map(this::mapToApiRestaurantDtoFromData)
+                .collect(Collectors.toList());
+    }
+
+    public ApiRestaurantDto getRestaurantById(Integer id) {
+        log.info("Fetching restaurant by ID: {}", id);
+
+        Optional<Restaurant> optionalRestaurant = restaurantRepository.findById(id);
+        if (optionalRestaurant.isEmpty()) {
+            log.error("Restaurant with id {} not found", id);
+            throw new ResourceNotFoundException("Restaurant with id " + id + " not found");
+        }
+
+        Restaurant restaurant = optionalRestaurant.get();
+        log.info("Converting entity to DTO: {}", restaurant);
+        return mapToApiRestaurantDto(restaurant);
+    }
+
+    @Transactional
+    public ApiRestaurantDto updateRestaurant(Integer id, @Valid ApiCreateRestaurantDto restaurantDto) {
+        log.info("Validating updated restaurant data: {}", restaurantDto);
+
+        if (restaurantDto.getAddress() == null) {
+            log.error("Address is required");
+            throw new ValidationException("Address is required");
+        }
+
+        UserEntity userEntity = userRepository.findById(restaurantDto.getUserId())
+                .orElseThrow(() -> new ValidationException("User not found"));
+
+        log.info("Fetching existing restaurant by ID: {}", id);
+        Optional<Restaurant> optionalRestaurant = restaurantRepository.findById(id);
+        if (optionalRestaurant.isEmpty()) {
+            log.error("Restaurant with id {} not found", id);
+            throw new ResourceNotFoundException("Restaurant with id " + id + " not found");
+        }
+
+        Restaurant existingRestaurant = optionalRestaurant.get();
+        Address updatedAddress = mapToAddressEntity(restaurantDto.getAddress());
+
+        log.info("Updating entity fields with DTO data: {}", restaurantDto);
+        existingRestaurant.setName(restaurantDto.getName());
+        existingRestaurant.setPhone(restaurantDto.getPhone());
+        existingRestaurant.setEmail(restaurantDto.getEmail());
+        existingRestaurant.setPriceRange(restaurantDto.getPriceRange());
+        existingRestaurant.setAddress(updatedAddress);
+        existingRestaurant.setUserEntity(userEntity);
+
+        log.info("Saving updated restaurant entity: {}", existingRestaurant);
+        addressRepository.save(updatedAddress);
+        Restaurant updatedRestaurant = restaurantRepository.save(existingRestaurant);
+
+        log.info("Converting updated entity to DTO: {}", updatedRestaurant);
+        return mapToApiRestaurantDto(updatedRestaurant);
+    }
+
+    @Transactional
+    public void deleteRestaurant(Integer id) {
+        log.info("Fetching restaurant by ID: {}", id);
+
+        Optional<Restaurant> optionalRestaurant = restaurantRepository.findById(id);
+        if (optionalRestaurant.isEmpty()) {
+            log.error("Restaurant with id {} not found", id);
+            throw new ResourceNotFoundException("Restaurant with id " + id + " not found");
+        }
+
+        Restaurant restaurant = optionalRestaurant.get();
+
+        log.info("Deleting restaurant entity: {}", restaurant);
+        restaurantRepository.delete(restaurant);
+    }
+
+    private Address mapToAddressEntity(ApiAddressDto addressDto) {
+        return Address.builder()
+                .streetAddress(addressDto.getStreetAddress())
+                .city(addressDto.getCity())
+                .postalCode(addressDto.getPostalCode())
                 .build();
-        address = addressRepository.save(address);
+    }
 
-        Restaurant restaurant = Restaurant.builder()
-                .userEntity(userEntity)
-                .address(address)
+    private Restaurant mapToRestaurantEntity(ApiCreateRestaurantDto restaurantDto, Address address,
+            UserEntity userEntity) {
+        return Restaurant.builder()
                 .name(restaurantDto.getName())
-                .priceRange(restaurantDto.getPriceRange())
                 .phone(restaurantDto.getPhone())
                 .email(restaurantDto.getEmail())
+                .priceRange(restaurantDto.getPriceRange())
+                .address(address)
+                .userEntity(userEntity)
                 .build();
-        restaurant = restaurantRepository.save(restaurant); // Updated this line
-        restaurantDto.setId(restaurant.getId());
-
-        System.out.println("Persisted Restaurant: " + restaurant);
-        System.out.println("Persisted Address: " + address);
-
-        return Optional.of(restaurantDto);
     }
 
-    public Optional<Restaurant> findById(int id) {
-        return restaurantRepository.findById(id);
+    private ApiRestaurantDto mapToApiRestaurantDto(Restaurant restaurant) {
+        return ApiRestaurantDto.builder()
+                .id(restaurant.getId())
+                .name(restaurant.getName())
+                .priceRange(restaurant.getPriceRange())
+                .rating(calculateRestaurantRating(restaurant))
+                .build();
     }
 
-    @Transactional
-    public Optional<ApiCreateRestaurantDto> updateRestaurant(int id, ApiCreateRestaurantDto updatedRestaurantDto) {
-        System.out.println("Received update request for restaurant id: " + id);
-        System.out.println("Update data: " + updatedRestaurantDto);
-
-        Optional<Restaurant> restaurantOptional = restaurantRepository.findById(id);
-        if (restaurantOptional.isEmpty()) {
-            System.out.println("Restaurant with id " + id + " not found");
-            return Optional.empty();
-        }
-
-        Restaurant restaurant = restaurantOptional.get();
-        restaurant.setName(updatedRestaurantDto.getName());
-        restaurant.setPriceRange(updatedRestaurantDto.getPriceRange());
-        restaurant.setPhone(updatedRestaurantDto.getPhone());
-        restaurant.setEmail(updatedRestaurantDto.getEmail());
-
-        ApiAddressDto updatedAddressDto = updatedRestaurantDto.getAddress();
-        if (updatedAddressDto != null) {
-            Address existingAddress = restaurant.getAddress();
-            existingAddress.setStreetAddress(updatedAddressDto.getStreetAddress());
-            existingAddress.setCity(updatedAddressDto.getCity());
-            existingAddress.setPostalCode(updatedAddressDto.getPostalCode());
-            addressRepository.save(existingAddress);
-        }
-
-        Restaurant updatedRestaurant = restaurantRepository.save(restaurant);
-        System.out.println("Updated restaurant: " + updatedRestaurant);
-
-        updatedRestaurantDto.setId(updatedRestaurant.getId());
-        return Optional.of(updatedRestaurantDto);
+    private ApiRestaurantDto mapToApiRestaurantDtoFromData(Object[] data) {
+        return ApiRestaurantDto.builder()
+                .id((Integer) data[0])
+                .name((String) data[1])
+                .priceRange((Integer) data[2])
+                .rating((Integer) data[3])
+                .build();
     }
 
-    @Transactional
-    public void deleteRestaurant(int restaurantId) {
-        System.out.println("Deleting restaurant with id: " + restaurantId);
-        restaurantRepository.deleteRestaurantById(restaurantId);
-        System.out.println("Deleted restaurant with id: " + restaurantId);
+    private int calculateRestaurantRating(Restaurant restaurant) {
+        List<Object[]> ratingData = restaurantRepository.findRestaurantWithAverageRatingById(restaurant.getId());
+        return ratingData.isEmpty() ? 0 : (int) ratingData.get(0)[3];
     }
 }

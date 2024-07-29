@@ -1,32 +1,65 @@
 package com.rocketFoodDelivery.rocketFood.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
 import com.rocketFoodDelivery.rocketFood.dtos.ApiResponseDto;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
-/**
- * Custom utility class for handling API responses. Only manages success responses. Error responses
- * are managed by the {@link com.rocketFoodDelivery.rocketFood.controller.GlobalExceptionHandler} class
- */
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+@Slf4j
 public class ResponseBuilder {
 
-    private static final Logger logger = LoggerFactory.getLogger(ResponseBuilder.class);
-
-    public static ResponseEntity<Object> buildOkResponse(Object data) {
-        ApiResponseDto response = new ApiResponseDto();
-        response.setMessage("Success");
-        response.setData(data);
-        logger.info("Building OK response: {}", response);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+    public static ResponseEntity<ApiResponseDto> buildBadRequestResponse(ApiResponseDto response) {
+        log.info("Building BadRequest response: {}", response);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
-    public static ResponseEntity<Object> buildCreatedResponse(Object data) {
-        ApiResponseDto response = new ApiResponseDto();
-        response.setMessage("Success");
-        response.setData(data);
-        logger.info("Building Created response: {}", response);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    public static ResponseEntity<ApiResponseDto> buildBadRequestResponse(String message) {
+        ApiResponseDto response = ApiResponseDto.builder()
+                .message(message)
+                .data(null)
+                .build();
+        log.info("Building BadRequest response: {}", response);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    public static ResponseEntity<ApiResponseDto> buildNotFoundResponse(String message) {
+        ApiResponseDto response = ApiResponseDto.builder()
+                .message("Resource not found")
+                .data(message)
+                .build();
+        log.info("Building NotFound response: {}", response);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    public static ResponseEntity<ApiResponseDto> buildErrorResponse(String message, int status) {
+        ApiResponseDto response = ApiResponseDto.builder()
+                .message(message)
+                .data(null)
+                .build();
+        log.info("Building error response with status {}: {}", status, response);
+        return ResponseEntity.status(status).body(response);
+    }
+
+    public static ResponseEntity<ApiResponseDto> buildResponse(String message, Object data, int status) {
+        ApiResponseDto response = ApiResponseDto.builder()
+                .message(message)
+                .data(data)
+                .build();
+        log.info("Building response with status {}: {}", status, response);
+        return ResponseEntity.status(status).body(response);
+    }
+
+    public static void buildErrorResponse(HttpServletResponse response, String message, int status) throws IOException {
+        ApiResponseDto apiResponse = ApiResponseDto.builder()
+                .message(message)
+                .data(null)
+                .build();
+        log.info("Building error response with status {}: {}", status, apiResponse);
+        response.setStatus(status);
+        response.setContentType("application/json");
+        response.getWriter().write(apiResponse.toString());
     }
 }

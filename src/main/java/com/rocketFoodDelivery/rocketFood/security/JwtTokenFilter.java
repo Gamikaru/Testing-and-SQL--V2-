@@ -1,7 +1,7 @@
 package com.rocketFoodDelivery.rocketFood.security;
 
-
 import com.rocketFoodDelivery.rocketFood.models.UserEntity;
+import com.rocketFoodDelivery.rocketFood.util.ResponseBuilder;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,8 +23,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
     private JwtUtil jwtUtil;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
         if (!hasAuthorizationBearer(request)) {
@@ -34,38 +33,39 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
         String token = getAccessToken(request);
 
-        if (!jwtUtil.validateAccessToken(token)) {
-            filterChain.doFilter(request, response);
+        try {
+            if (!jwtUtil.validateAccessToken(token)) {
+                ResponseBuilder.buildErrorResponse(response, "Invalid Token", HttpServletResponse.SC_UNAUTHORIZED);
+                return;
+            }
+
+            setAuthenticationContext(token, request);
+        } catch (Exception ex) {
+            ResponseBuilder.buildErrorResponse(response, "Authentication error: " + ex.getMessage(),
+                    HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
-        setAuthenticationContext(token, request);
         filterChain.doFilter(request, response);
     }
 
     private boolean hasAuthorizationBearer(HttpServletRequest request) {
         String header = request.getHeader("Authorization");
-        if (ObjectUtils.isEmpty(header) || !header.startsWith("Bearer")) {
-            return false;
-        }
-
-        return true;
+        return !ObjectUtils.isEmpty(header) && header.startsWith("Bearer");
     }
 
     private String getAccessToken(HttpServletRequest request) {
         String header = request.getHeader("Authorization");
-        String token = header.split(" ")[1].trim();
-        return token;
+        return header.split(" ")[1].trim();
     }
 
     private void setAuthenticationContext(String token, HttpServletRequest request) {
         UserDetails userDetails = getUserDetails(token);
 
-        UsernamePasswordAuthenticationToken
-                authentication = new UsernamePasswordAuthenticationToken(userDetails, null, null);
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
+                userDetails.getAuthorities());
 
-        authentication.setDetails(
-                new WebAuthenticationDetailsSource().buildDetails(request));
+        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }
