@@ -1,433 +1,346 @@
 package com.rocketFoodDelivery.rocketFood.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.rocketFoodDelivery.rocketFood.RocketFoodApplication;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rocketFoodDelivery.rocketFood.controller.api.RestaurantApiController;
 import com.rocketFoodDelivery.rocketFood.dtos.ApiAddressDto;
 import com.rocketFoodDelivery.rocketFood.dtos.ApiCreateRestaurantDto;
 import com.rocketFoodDelivery.rocketFood.dtos.ApiRestaurantDto;
+import com.rocketFoodDelivery.rocketFood.exception.ResourceNotFoundException;
 import com.rocketFoodDelivery.rocketFood.models.Address;
-import com.rocketFoodDelivery.rocketFood.models.Order;
 import com.rocketFoodDelivery.rocketFood.models.Restaurant;
 import com.rocketFoodDelivery.rocketFood.models.UserEntity;
-import com.rocketFoodDelivery.rocketFood.repository.OrderRepository;
-import com.rocketFoodDelivery.rocketFood.repository.RestaurantRepository;
-import com.rocketFoodDelivery.rocketFood.repository.UserRepository;
 import com.rocketFoodDelivery.rocketFood.service.RestaurantService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.core.env.Environment;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.*;
+import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@AutoConfigureMockMvc(addFilters = false)
-@Transactional
+@SpringBootTest(classes = RocketFoodApplication.class)
+@AutoConfigureMockMvc
+@TestPropertySource(locations = "classpath:application-test.properties")
 public class RestaurantApiControllerTest {
-
-        @InjectMocks
-        private RestaurantApiController restaurantController;
-
-        @MockBean
-        private RestaurantService restaurantService;
-
-        @MockBean
-        private UserRepository userRepository;
-
-        @MockBean
-        private RestaurantRepository restaurantRepository;
 
         @Autowired
         private MockMvc mockMvc;
 
         @MockBean
-        private OrderRepository orderRepository;
+        private RestaurantService restaurantService;
 
         @Autowired
-        private Environment environment;
+        private ObjectMapper objectMapper;
+
+        private ApiCreateRestaurantDto validRestaurantDto;
+        private Address validAddress;
+        private UserEntity validUser;
 
         @BeforeEach
         public void setUp() {
-                System.out.println("Active profiles: " + Arrays.toString(environment.getActiveProfiles()));
-                System.out.println("Using datasource URL: " + environment.getProperty("spring.datasource.url"));
-                reset(restaurantService, userRepository, restaurantRepository, orderRepository);
-
-                // Set up mock data for tests
-                UserEntity testUser = UserEntity.builder()
-                                .id(1)
-                                .name("Test User")
-                                .email("user@test.com")
-                                .password("password")
-                                .build();
-
-                Address testAddress = Address.builder()
-                                .id(1)
-                                .streetAddress("123 Test St")
-                                .city("Test City")
+                validAddress = Address.builder()
+                                .streetAddress("123 Main St")
+                                .city("Springfield")
                                 .postalCode("12345")
                                 .build();
 
-                Restaurant testRestaurant1 = Restaurant.builder()
-                                .id(1)
-                                .name("Restaurant One")
-                                .phone("1234567890")
-                                .email("restaurant1@test.com")
-                                .priceRange(1)
-                                .userEntity(testUser)
-                                .address(testAddress)
+                validUser = UserEntity.builder()
+                                .name("Test User")
+                                .email("test@user.com")
+                                .password("password")
                                 .build();
 
-                Restaurant testRestaurant2 = Restaurant.builder()
-                                .id(2)
-                                .name("Restaurant Two")
-                                .phone("0987654321")
-                                .email("restaurant2@test.com")
-                                .priceRange(1)
-                                .userEntity(testUser)
-                                .address(testAddress)
-                                .build();
-
-                when(userRepository.findById(1)).thenReturn(Optional.of(testUser));
-                when(restaurantRepository.findById(1)).thenReturn(Optional.of(testRestaurant1));
-                when(restaurantRepository.findById(2)).thenReturn(Optional.of(testRestaurant2));
-                when(restaurantRepository.save(any(Restaurant.class))).thenReturn(testRestaurant1);
-
-                when(restaurantService.updateRestaurant(anyInt(), any(ApiCreateRestaurantDto.class)))
-                                .thenAnswer(invocation -> {
-                                        int id = invocation.getArgument(0);
-                                        ApiCreateRestaurantDto dto = invocation.getArgument(1);
-                                        dto.setId(id);
-                                        return Optional.of(dto);
-                                });
-
-                doNothing().when(restaurantService).deleteRestaurant(anyInt());
-        }
-
-        @Test
-        public void testCreateRestaurant_Success() throws Exception {
-                ApiCreateRestaurantDto restaurantDto = new ApiCreateRestaurantDto();
-                restaurantDto.setUserId(1);
-                restaurantDto.setName("Test Restaurant");
-                restaurantDto.setPhone("1234567890");
-                restaurantDto.setEmail("test@restaurant.com");
-                restaurantDto.setPriceRange(2);
-                restaurantDto.setAddress(new ApiAddressDto(1, "123 Test St", "Test City", "12345"));
-
-                System.out.println("Request payload: " + asJsonString(restaurantDto));
-
-                when(restaurantService.createRestaurant(any(ApiCreateRestaurantDto.class)))
-                                .thenAnswer(invocation -> {
-                                        ApiCreateRestaurantDto dto = invocation.getArgument(0);
-                                        dto.setId(1); // Mock the id assignment after creation
-                                        return Optional.of(dto);
-                                });
-
-                MvcResult mvcResult = mockMvc.perform(post("/api/restaurants")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(asJsonString(restaurantDto)))
-                                .andExpect(status().isCreated())
-                                .andExpect(jsonPath("$.data.name").value("Test Restaurant"))
-                                .andExpect(jsonPath("$.data.phone").value("1234567890"))
-                                .andExpect(jsonPath("$.data.email").value("test@restaurant.com"))
-                                .andReturn();
-
-                String responseContent = mvcResult.getResponse().getContentAsString();
-                System.out.println("Response: " + responseContent);
-
-                JsonNode responseJson = new ObjectMapper().readTree(responseContent);
-                int actualId = responseJson.path("data").path("id").asInt();
-
-                assertNotEquals(0, actualId);
-
-                assertEquals("Test Restaurant", responseJson.path("data").path("name").asText());
-                assertEquals("1234567890", responseJson.path("data").path("phone").asText());
-                assertEquals("test@restaurant.com", responseJson.path("data").path("email").asText());
-        }
-
-        @Test
-        public void testUpdateRestaurant_Success() throws Exception {
-                ApiCreateRestaurantDto restaurantDto = new ApiCreateRestaurantDto();
-                restaurantDto.setUserId(1);
-                restaurantDto.setName("Updated Restaurant");
-                restaurantDto.setPhone("0987654321");
-                restaurantDto.setEmail("updated@restaurant.com");
-                restaurantDto.setPriceRange(1);
-                restaurantDto.setAddress(new ApiAddressDto(3, "123 Test St", "Test City", "12345"));
-
-                when(restaurantService.updateRestaurant(anyInt(), any(ApiCreateRestaurantDto.class)))
-                                .thenAnswer(invocation -> {
-                                        int id = invocation.getArgument(0);
-                                        ApiCreateRestaurantDto dto = invocation.getArgument(1);
-                                        dto.setId(id);
-                                        return Optional.of(dto);
-                                });
-
-                MvcResult mvcResult = mockMvc.perform(put("/api/restaurants/{id}", 2)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(asJsonString(restaurantDto)))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.data.name").value("Updated Restaurant"))
-                                .andExpect(jsonPath("$.data.phone").value("0987654321"))
-                                .andExpect(jsonPath("$.data.email").value("updated@restaurant.com"))
-                                .andReturn();
-
-                String responseContent = mvcResult.getResponse().getContentAsString();
-                System.out.println("Response: " + responseContent);
-
-                int status = mvcResult.getResponse().getStatus();
-                System.out.println("Status: " + status);
-        }
-
-        @Test
-        public void testDeleteRestaurant_Success() throws Exception {
-                int restaurantId = 2;
-
-                Restaurant existingRestaurant = Restaurant.builder()
-                                .id(restaurantId)
+                validRestaurantDto = ApiCreateRestaurantDto.builder()
                                 .name("Test Restaurant")
-                                .phone("1234567890")
+                                .phone("123-456-7890")
                                 .email("test@restaurant.com")
                                 .priceRange(2)
-                                .userEntity(UserEntity.builder()
-                                                .id(1)
-                                                .name("Test User")
-                                                .email("user@test.com")
-                                                .password("password")
-                                                .build())
-                                .address(Address.builder()
-                                                .id(1)
-                                                .streetAddress("123 Test St")
-                                                .city("Test City")
-                                                .postalCode("12345")
+                                .userId(validUser.getId())
+                                .address(ApiAddressDto.builder()
+                                                .streetAddress(validAddress.getStreetAddress())
+                                                .city(validAddress.getCity())
+                                                .postalCode(validAddress.getPostalCode())
                                                 .build())
                                 .build();
+        }
 
-                when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.of(existingRestaurant));
-                doNothing().when(restaurantService).deleteRestaurant(restaurantId);
-
-                MvcResult mvcResult = mockMvc.perform(delete("/api/restaurants/{id}", restaurantId)
-                                .contentType(MediaType.APPLICATION_JSON))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.message").value("Restaurant deleted successfully"))
-                                .andReturn();
-
-                String responseContent = mvcResult.getResponse().getContentAsString();
-                System.out.println("Response: " + responseContent);
-
-                int status = mvcResult.getResponse().getStatus();
-                System.out.println("Status: " + status);
+        @AfterEach
+        public void tearDown() {
         }
 
         @Test
-        public void testDeleteRestaurant_NotFound() throws Exception {
-                int restaurantId = 100;
+        @WithMockUser
+        public void testCreateRestaurantWithValidData() throws Exception {
+                ApiRestaurantDto createdRestaurant = ApiRestaurantDto.builder()
+                                .id(1)
+                                .name(validRestaurantDto.getName())
+                                .priceRange(validRestaurantDto.getPriceRange())
+                                .rating(5) // Placeholder rating
+                                .build();
 
-                when(restaurantRepository.findById(restaurantId)).thenReturn(Optional.empty());
+                Mockito.when(restaurantService.createRestaurant(Mockito.any(ApiCreateRestaurantDto.class)))
+                                .thenReturn(createdRestaurant);
 
-                MvcResult mvcResult = mockMvc.perform(delete("/api/restaurants/{id}", restaurantId)
-                                .contentType(MediaType.APPLICATION_JSON))
-                                .andExpect(status().isNotFound())
-                                .andExpect(jsonPath("$.message").value("Resource not found"))
-                                .andExpect(jsonPath("$.data")
-                                                .value("Restaurant with id " + restaurantId + " not found"))
-                                .andReturn();
-
-                String responseContent = mvcResult.getResponse().getContentAsString();
-                System.out.println("Response: " + responseContent);
-
-                int status = mvcResult.getResponse().getStatus();
-                System.out.println("Status: " + status);
-        }
-
-        @Test
-        public void testUpdateRestaurant_NotFound() throws Exception {
-                ApiCreateRestaurantDto restaurantDto = new ApiCreateRestaurantDto();
-                restaurantDto.setUserId(1);
-                restaurantDto.setName("Non-existent Restaurant");
-                restaurantDto.setPhone("0000000000");
-                restaurantDto.setEmail("nonexistent@restaurant.com");
-                restaurantDto.setPriceRange(1);
-                restaurantDto.setAddress(new ApiAddressDto(1, "123 Test St", "Test City", "12345"));
-
-                when(restaurantRepository.findById(100)).thenReturn(Optional.empty());
-
-                MvcResult mvcResult = mockMvc.perform(put("/api/restaurants/{id}", 100)
+                mockMvc.perform(post("/api/restaurants")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(asJsonString(restaurantDto)))
-                                .andExpect(status().isNotFound())
-                                .andExpect(jsonPath("$.message").value("Resource not found"))
-                                .andExpect(jsonPath("$.data").value("Restaurant with id 100 not found"))
-                                .andReturn();
-
-                String responseContent = mvcResult.getResponse().getContentAsString();
-                System.out.println("Response: " + responseContent);
-
-                int status = mvcResult.getResponse().getStatus();
-                System.out.println("Status: " + status);
+                                .content(objectMapper.writeValueAsString(validRestaurantDto)))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.data.name").value(validRestaurantDto.getName()))
+                                .andExpect(jsonPath("$.data.price_range").value(validRestaurantDto.getPriceRange()))
+                                .andExpect(jsonPath("$.data.rating").value(5));
         }
 
         @Test
-        public void testCreateRestaurant_InvalidData() throws Exception {
-                ApiCreateRestaurantDto restaurantDto = new ApiCreateRestaurantDto();
-                restaurantDto.setUserId(1);
-                restaurantDto.setName(""); // Invalid name
-                restaurantDto.setPhone("1234567890");
-                restaurantDto.setEmail("invalid-email"); // Invalid email format
-                restaurantDto.setPriceRange(0); // Invalid price range
-                restaurantDto.setAddress(new ApiAddressDto(1, "123 Test St", "Test City", "12345"));
+        @WithMockUser
+        public void testCreateRestaurantWithMissingFields() throws Exception {
+                ApiCreateRestaurantDto incompleteRestaurantDto = ApiCreateRestaurantDto.builder()
+                                .name("Test Restaurant")
+                                .phone("123-456-7890")
+                                .build();
 
-                System.out.println("Request payload: " + asJsonString(restaurantDto));
-
-                MvcResult mvcResult = mockMvc.perform(post("/api/restaurants")
+                mockMvc.perform(post("/api/restaurants")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(asJsonString(restaurantDto)))
+                                .content(objectMapper.writeValueAsString(incompleteRestaurantDto)))
                                 .andExpect(status().isBadRequest())
-                                .andExpect(jsonPath("$.message").value("Validation failed"))
-                                .andReturn();
-
-                String responseContent = mvcResult.getResponse().getContentAsString();
-                System.out.println("Response: " + responseContent);
-
-                int status = mvcResult.getResponse().getStatus();
-                System.out.println("Status: " + status);
+                                .andExpect(jsonPath("$.message", is("Invalid or missing parameters")));
         }
 
         @Test
-        public void testGetRestaurants_Success() throws Exception {
-                ApiRestaurantDto restaurant1 = ApiRestaurantDto.builder()
+        @WithMockUser
+        public void testCreateRestaurantWithInvalidData() throws Exception {
+                ApiCreateRestaurantDto invalidRestaurantDto = ApiCreateRestaurantDto.builder()
+                                .name("")
+                                .phone("invalid-phone")
+                                .email("invalid-email")
+                                .priceRange(2)
+                                .address(validRestaurantDto.getAddress())
+                                .build();
+
+                mockMvc.perform(post("/api/restaurants")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(invalidRestaurantDto)))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message", is("Invalid or missing parameters")));
+        }
+
+        @Test
+        @WithMockUser
+        public void testFetchRestaurantsWithoutFilters() throws Exception {
+                ApiRestaurantDto restaurantDto = ApiRestaurantDto.builder()
                                 .id(1)
-                                .name("Restaurant One")
-                                .priceRange(1)
+                                .name(validRestaurantDto.getName())
+                                .priceRange(validRestaurantDto.getPriceRange())
                                 .rating(5)
                                 .build();
 
-                ApiRestaurantDto restaurant2 = ApiRestaurantDto.builder()
-                                .id(2)
-                                .name("Restaurant Two")
-                                .priceRange(1)
-                                .rating(4)
+                Mockito.when(restaurantService.getRestaurants(null, null)).thenReturn(List.of(restaurantDto));
+
+                mockMvc.perform(get("/api/restaurants"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data", hasSize(1)))
+                                .andExpect(jsonPath("$.data[0].name", is(restaurantDto.getName())))
+                                .andExpect(jsonPath("$.data[0].price_range", is(restaurantDto.getPriceRange())));
+        }
+
+        @Test
+        @WithMockUser
+        public void testFetchRestaurantsWithRatingFilter() throws Exception {
+                mockMvc.perform(get("/api/restaurants").param("rating", "5"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data", is(empty())));
+        }
+
+        @Test
+        @WithMockUser
+        public void testFetchRestaurantsWithPriceRangeFilter() throws Exception {
+                ApiRestaurantDto restaurantDto = ApiRestaurantDto.builder()
+                                .id(1)
+                                .name(validRestaurantDto.getName())
+                                .priceRange(validRestaurantDto.getPriceRange())
+                                .rating(5)
                                 .build();
 
-                List<ApiRestaurantDto> restaurants = Arrays.asList(restaurant1, restaurant2);
+                Mockito.when(restaurantService.getRestaurants(null, 2)).thenReturn(List.of(restaurantDto));
 
-                System.out.println("Mocking RestaurantService.findRestaurantsByRatingAndPriceRange to return: "
-                                + restaurants);
+                mockMvc.perform(get("/api/restaurants").param("priceRange", "2"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data", hasSize(1)))
+                                .andExpect(jsonPath("$.data[0].name", is(restaurantDto.getName())))
+                                .andExpect(jsonPath("$.data[0].price_range", is(restaurantDto.getPriceRange())));
+        }
 
-                when(restaurantService.findRestaurantsByRatingAndPriceRange(any(), any())).thenReturn(restaurants);
-
-                MvcResult mvcResult = mockMvc.perform(get("/api/restaurants")
+        @Test
+        @WithMockUser
+        public void testFetchRestaurantsWithRatingAndPriceRangeFilters() throws Exception {
+                mockMvc.perform(get("/api/restaurants")
                                 .param("rating", "5")
-                                .param("price_range", "1")
-                                .contentType(MediaType.APPLICATION_JSON))
+                                .param("priceRange", "2"))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.data.length()").value(2))
-                                .andExpect(jsonPath("$.data[0].name").value("Restaurant One"))
-                                .andExpect(jsonPath("$.data[0].rating").value(5))
-                                .andExpect(jsonPath("$.data[1].name").value("Restaurant Two"))
-                                .andExpect(jsonPath("$.data[1].rating").value(4))
-                                .andReturn();
-
-                String responseContent = mvcResult.getResponse().getContentAsString();
-                System.out.println("Response: " + responseContent);
-
-                JsonNode responseJson = new ObjectMapper().readTree(responseContent);
-                assertEquals(2, responseJson.path("data").size());
-                assertEquals("Restaurant One", responseJson.path("data").get(0).path("name").asText());
-                assertEquals(5, responseJson.path("data").get(0).path("rating").asInt());
-                assertEquals("Restaurant Two", responseJson.path("data").get(1).path("name").asText());
-                assertEquals(4, responseJson.path("data").get(1).path("rating").asInt());
+                                .andExpect(jsonPath("$.data", is(empty())));
         }
 
         @Test
-        public void testGetRestaurants_EmptyResult() throws Exception {
-                List<ApiRestaurantDto> emptyRestaurants = Arrays.asList();
-
-                System.out.println("Mocking RestaurantService.findRestaurantsByRatingAndPriceRange to return: "
-                                + emptyRestaurants);
-
-                when(restaurantService.findRestaurantsByRatingAndPriceRange(any(), any())).thenReturn(emptyRestaurants);
-
-                MvcResult mvcResult = mockMvc.perform(get("/api/restaurants")
-                                .param("rating", "1")
-                                .param("price_range", "3")
-                                .contentType(MediaType.APPLICATION_JSON))
-                                .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.data.length()").value(0))
-                                .andReturn();
-
-                String responseContent = mvcResult.getResponse().getContentAsString();
-                System.out.println("Response: " + responseContent);
-
-                JsonNode responseJson = new ObjectMapper().readTree(responseContent);
-                assertEquals(0, responseJson.path("data").size());
-        }
-
-        @Test
-        public void testGetAllRestaurants_Success() throws Exception {
-                ApiRestaurantDto restaurant1 = ApiRestaurantDto.builder()
+        @WithMockUser
+        public void testFetchRestaurantByValidId() throws Exception {
+                ApiRestaurantDto restaurantDto = ApiRestaurantDto.builder()
                                 .id(1)
-                                .name("Restaurant One")
-                                .priceRange(1)
+                                .name(validRestaurantDto.getName())
+                                .priceRange(validRestaurantDto.getPriceRange())
                                 .rating(5)
                                 .build();
 
-                ApiRestaurantDto restaurant2 = ApiRestaurantDto.builder()
-                                .id(2)
-                                .name("Restaurant Two")
-                                .priceRange(1)
-                                .rating(4)
-                                .build();
+                Mockito.when(restaurantService.getRestaurantById(1)).thenReturn(restaurantDto);
 
-                List<ApiRestaurantDto> restaurants = Arrays.asList(restaurant1, restaurant2);
-
-                when(restaurantService.findRestaurantsByRatingAndPriceRange(null, null)).thenReturn(restaurants);
-
-                MvcResult mvcResult = mockMvc.perform(get("/api/restaurants")
-                                .contentType(MediaType.APPLICATION_JSON))
+                mockMvc.perform(get("/api/restaurants/{id}", 1))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.data.length()").value(2))
-                                .andExpect(jsonPath("$.data[0].name").value("Restaurant One"))
-                                .andExpect(jsonPath("$.data[0].rating").value(5))
-                                .andExpect(jsonPath("$.data[1].name").value("Restaurant Two"))
-                                .andExpect(jsonPath("$.data[1].rating").value(4))
-                                .andReturn();
-
-                String responseContent = mvcResult.getResponse().getContentAsString();
-                System.out.println("Response: " + responseContent);
-
-                JsonNode responseJson = new ObjectMapper().readTree(responseContent);
-                assertEquals(2, responseJson.path("data").size());
-                assertEquals("Restaurant One", responseJson.path("data").get(0).path("name").asText());
-                assertEquals(5, responseJson.path("data").get(0).path("rating").asInt());
-                assertEquals("Restaurant Two", responseJson.path("data").get(1).path("name").asText());
-                assertEquals(4, responseJson.path("data").get(1).path("rating").asInt());
+                                .andExpect(jsonPath("$.data.name", is(restaurantDto.getName())))
+                                .andExpect(jsonPath("$.data.price_range", is(restaurantDto.getPriceRange())));
         }
 
-        private static String asJsonString(final Object obj) {
-                try {
-                        return new ObjectMapper().writeValueAsString(obj);
-                } catch (Exception e) {
-                        throw new RuntimeException(e);
+        @Test
+        @WithMockUser
+        public void testFetchRestaurantByInvalidId() throws Exception {
+                Mockito.when(restaurantService.getRestaurantById(999))
+                                .thenThrow(new ResourceNotFoundException("Restaurant with id 999 not found"));
+
+                mockMvc.perform(get("/api/restaurants/{id}", 999))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message", is("Restaurant with id 999 not found")));
+        }
+
+        @Test
+        @WithMockUser
+        public void testUpdateRestaurantWithValidData() throws Exception {
+                ApiCreateRestaurantDto updatedRestaurantDto = ApiCreateRestaurantDto.builder()
+                                .name("Updated Restaurant")
+                                .phone("098-765-4321")
+                                .email("updated@restaurant.com")
+                                .priceRange(3)
+                                .address(validRestaurantDto.getAddress())
+                                .build();
+
+                ApiRestaurantDto updatedRestaurant = ApiRestaurantDto.builder()
+                                .id(1)
+                                .name(updatedRestaurantDto.getName())
+                                .priceRange(updatedRestaurantDto.getPriceRange())
+                                .rating(5)
+                                .build();
+
+                Mockito.when(restaurantService.updateRestaurant(Mockito.eq(1),
+                                Mockito.any(ApiCreateRestaurantDto.class)))
+                                .thenReturn(updatedRestaurant);
+
+                mockMvc.perform(put("/api/restaurants/{id}", 1)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(updatedRestaurantDto)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.name", is(updatedRestaurantDto.getName())))
+                                .andExpect(jsonPath("$.data.price_range", is(updatedRestaurantDto.getPriceRange())));
+        }
+
+        @Test
+        @WithMockUser
+        public void testUpdateRestaurantWithMissingFields() throws Exception {
+                ApiCreateRestaurantDto incompleteRestaurantDto = ApiCreateRestaurantDto.builder()
+                                .name("Updated Restaurant")
+                                .build();
+
+                mockMvc.perform(put("/api/restaurants/{id}", 1)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(incompleteRestaurantDto)))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message", is("Invalid or missing parameters")));
+        }
+
+        @Test
+        @WithMockUser
+        public void testUpdateRestaurantWithInvalidData() throws Exception {
+                ApiCreateRestaurantDto invalidRestaurantDto = ApiCreateRestaurantDto.builder()
+                                .name("")
+                                .phone("invalid-phone")
+                                .email("invalid-email")
+                                .priceRange(2)
+                                .address(validRestaurantDto.getAddress())
+                                .build();
+
+                mockMvc.perform(put("/api/restaurants/{id}", 1)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(invalidRestaurantDto)))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message", is("Invalid or missing parameters")));
+        }
+
+        @Test
+        @WithMockUser
+        public void testUpdateRestaurantWithNonExistingId() throws Exception {
+                ApiCreateRestaurantDto updatedRestaurantDto = ApiCreateRestaurantDto.builder()
+                                .name("Updated Restaurant")
+                                .phone("098-765-4321")
+                                .email("updated@restaurant.com")
+                                .priceRange(3)
+                                .address(validRestaurantDto.getAddress())
+                                .build();
+
+                Mockito.when(restaurantService.updateRestaurant(Mockito.eq(999),
+                                Mockito.any(ApiCreateRestaurantDto.class)))
+                                .thenThrow(new ResourceNotFoundException("Restaurant with id 999 not found"));
+
+                mockMvc.perform(put("/api/restaurants/{id}", 999)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(updatedRestaurantDto)))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message", is("Restaurant with id 999 not found")));
+        }
+
+        @Test
+        @WithMockUser
+        public void testDeleteRestaurantWithValidId() throws Exception {
+                Mockito.doNothing().when(restaurantService).deleteRestaurant(1);
+
+                mockMvc.perform(delete("/api/restaurants/{id}", 1))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message", is("Success")))
+                                .andExpect(jsonPath("$.data", is("Restaurant deleted successfully")));
+        }
+
+        @Test
+        @WithMockUser
+        public void testDeleteRestaurantWithInvalidId() throws Exception {
+                Mockito.doThrow(new ResourceNotFoundException("Restaurant with id 999 not found"))
+                                .when(restaurantService).deleteRestaurant(999);
+
+                mockMvc.perform(delete("/api/restaurants/{id}", 999))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message", is("Restaurant with id 999 not found")));
+        }
+
+        @Configuration
+        @EnableWebSecurity
+        public static class TestSecurityConfig {
+
+                @Primary
+                @Bean
+                public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+                        http.csrf().disable()
+                                        .authorizeRequests().anyRequest().permitAll();
+                        return http.build();
                 }
         }
 }
