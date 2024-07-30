@@ -8,6 +8,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+
+import java.util.List;
+
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -40,6 +44,10 @@ public class Restaurant {
 
     @Column(nullable = false)
     private String email;
+
+    
+    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true) // Added cascade and orphan removal
+    private List<Product> products; // Added products relationship
 
     public Restaurant(int id) {
         this.id = id;

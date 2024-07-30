@@ -7,10 +7,15 @@ import com.rocketFoodDelivery.rocketFood.exception.ResourceNotFoundException;
 import com.rocketFoodDelivery.rocketFood.exception.ValidationException;
 import com.rocketFoodDelivery.rocketFood.models.Address;
 import com.rocketFoodDelivery.rocketFood.models.Restaurant;
+import com.rocketFoodDelivery.rocketFood.models.Product;
+import com.rocketFoodDelivery.rocketFood.models.Employee;
 import com.rocketFoodDelivery.rocketFood.models.UserEntity;
 import com.rocketFoodDelivery.rocketFood.repository.AddressRepository;
 import com.rocketFoodDelivery.rocketFood.repository.RestaurantRepository;
+import com.rocketFoodDelivery.rocketFood.repository.EmployeeRepository;
+import com.rocketFoodDelivery.rocketFood.repository.ProductRepository;
 import com.rocketFoodDelivery.rocketFood.repository.UserRepository;
+
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,12 +34,16 @@ public class RestaurantService {
     private final RestaurantRepository restaurantRepository;
     private final AddressRepository addressRepository;
     private final UserRepository userRepository;
+    private final EmployeeRepository employeeRepository;
+    private final ProductRepository productRepository;
 
     public RestaurantService(RestaurantRepository restaurantRepository, AddressRepository addressRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository, EmployeeRepository employeeRepository, ProductRepository productRepository) {
         this.restaurantRepository = restaurantRepository;
         this.addressRepository = addressRepository;
         this.userRepository = userRepository;
+        this.employeeRepository = employeeRepository;
+        this.productRepository = productRepository;
     }
 
     @Transactional
@@ -127,7 +136,7 @@ public class RestaurantService {
     }
 
     @Transactional
-    public void deleteRestaurant(Integer id) {
+    public ApiRestaurantDto deleteRestaurant(Integer id) {
         log.info("Fetching restaurant by ID: {}", id);
 
         Optional<Restaurant> optionalRestaurant = restaurantRepository.findById(id);
@@ -138,8 +147,24 @@ public class RestaurantService {
 
         Restaurant restaurant = optionalRestaurant.get();
 
+        // Delete related products first
+        List<Product> products = productRepository.findByRestaurantId(restaurant.getId());
+        for (Product product : products) {
+            productRepository.deleteById(product.getId());
+        }
+
+        // Fetch and delete employees related to the restaurant
+        List<Employee> employees = employeeRepository.findEmployeesByRestaurantId(restaurant.getId());
+        for (Employee employee : employees) {
+            employeeRepository.deleteById(employee.getId());
+        }
+
+        // Now delete the restaurant
         log.info("Deleting restaurant entity: {}", restaurant);
-        restaurantRepository.delete(restaurant);
+        restaurantRepository.deleteRestaurantById(restaurant.getId());
+
+        // Return the deleted restaurant details as DTO
+        return mapToApiRestaurantDto(restaurant);
     }
 
     private Address mapToAddressEntity(ApiAddressDto addressDto) {
