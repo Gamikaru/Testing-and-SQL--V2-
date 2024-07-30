@@ -13,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import com.rocketFoodDelivery.rocketFood.util.ResponseBuilder;
 
 @Slf4j
 @RestControllerAdvice
@@ -68,6 +67,16 @@ public class GlobalExceptionHandler {
                 .message("Authentication failed. Please check your credentials.")
                 .build();
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiErrorDto> handleIllegalArgumentException(IllegalArgumentException ex) {
+        log.error("Illegal argument: {}", ex.getMessage(), ex);
+        ApiErrorDto error = ApiErrorDto.builder()
+                .error("Invalid argument")
+                .details(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(Exception.class)
