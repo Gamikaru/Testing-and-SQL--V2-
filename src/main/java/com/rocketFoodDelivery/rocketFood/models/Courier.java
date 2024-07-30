@@ -16,29 +16,38 @@ import org.hibernate.annotations.OnDeleteAction;
 @Entity
 public class Courier {
     @Id
-    @GeneratedValue( strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     @ManyToOne(cascade = CascadeType.REMOVE)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "user_id",unique = true ,nullable = false)
+    @JoinColumn(name = "user_id", unique = true, nullable = false)
     private UserEntity userEntity;
 
     @ManyToOne(cascade = CascadeType.REMOVE)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "address_id",nullable = false)
+    @JoinColumn(name = "address_id", nullable = false)
     private Address address;
 
-    @ManyToOne(cascade = CascadeType.REMOVE )
+    @ManyToOne(cascade = CascadeType.REMOVE)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "courierStatus_id",nullable = false)
-    private CourierStatus courierStatus ;
+    @JoinColumn(name = "courierStatus_id", nullable = false)
+    private CourierStatus courierStatus;
+
     @Column(nullable = false)
     private String phone;
+
     @Column(nullable = false)
     @Email
     private String email;
 
-    @Column(columnDefinition = "boolean default true") // default
+    @Column(columnDefinition = "boolean default true")
     private boolean active;
+
+    @Column(nullable = false)
+    private String name;
+
+    public String getName() {
+        return name;
+    }
 }

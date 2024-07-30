@@ -3,10 +3,12 @@ package com.rocketFoodDelivery.rocketFood.dtos;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
-//this is for the get order api.
 public class ApiOrderRequestDto {
-    int id;
-    String type;
+    private int customer_id;
+    private int restaurant_id;
+    private List<ApiProductForOrderApiDto> products;
 }

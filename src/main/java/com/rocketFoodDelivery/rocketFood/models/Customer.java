@@ -17,24 +17,36 @@ import org.hibernate.annotations.OnDeleteAction;
 @Table(name = "customers")
 public class Customer {
     @Id
-    @GeneratedValue( strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     @OneToOne
-    @JoinColumn(name = "user_id", unique = true , nullable = false)
+    @JoinColumn(name = "user_id", unique = true, nullable = false)
     private UserEntity userEntity;
 
     @ManyToOne(cascade = CascadeType.REMOVE)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "address_id" , nullable = false)
+    @JoinColumn(name = "address_id", nullable = false)
     private Address address;
 
     @Column(columnDefinition = "boolean default true")
     private boolean active;
+
     @Column(nullable = false)
     private String phone;
 
     @Email
     @Column(nullable = false)
     private String email;
+
+    @Column(nullable = false)
+    private String name;
+
+    public String getName() {
+        return name;
+    }
+
+    public Customer(int id) {
+        this.id = id;
+    }
 }

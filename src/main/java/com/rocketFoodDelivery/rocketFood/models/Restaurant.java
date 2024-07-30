@@ -40,4 +40,8 @@ public class Restaurant {
 
     @Column(nullable = false)
     private String email;
+
+    public Restaurant(int id) {
+        this.id = id;
+    }
 }
