@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 @Getter
 @Setter
@@ -17,6 +19,12 @@ public class ApiResponseDto {
 
     @Override
     public String toString() {
-        return "{\"message\":\"" + message + "\", \"data\":\"" + data + "\"}";
+        try {
+            return "{\"message\":\"" + message + "\", \"data\":" + new ObjectMapper().writeValueAsString(data) + "}";
+        } catch (JsonProcessingException e) {
+            // Handle the exception
+            return "{\"message\":\"" + message + "\", \"data\":\"" + data + "\"}";
+        }
     }
+
 }

@@ -38,4 +38,22 @@ public class Product {
         return unitCost;
     }
 
+    public static class ProductBuilder {
+        private int id;
+        private Restaurant restaurant;
+        private String name;
+        private String description;
+        private Integer unitCost;
+
+        public ProductBuilder cost(Integer unitCost) {
+            this.unitCost = unitCost;
+            return this;
+        }
+
+        // Other builder methods...
+
+        public Product build() {
+            return new Product(id, restaurant, name, description, unitCost);
+        }
+    }
 }

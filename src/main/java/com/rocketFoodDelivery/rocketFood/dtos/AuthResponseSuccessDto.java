@@ -12,9 +12,7 @@ import lombok.Setter;
 @Setter
 @Builder
 public class AuthResponseSuccessDto {
-    private String accessToken;
     private boolean success;
-    private int userId;
-    private int customerId;
-    private int courierId;
+    private String accessToken;
+
 }

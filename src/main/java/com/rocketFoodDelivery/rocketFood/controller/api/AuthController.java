@@ -46,34 +46,21 @@ public class AuthController {
             UserEntity user = (UserEntity) authentication.getPrincipal();
             String accessToken = jwtUtil.generateAccessToken(user);
 
-            AuthResponseSuccessDto response = buildSuccessResponse(user, accessToken);
+            AuthResponseSuccessDto response = AuthResponseSuccessDto.builder()
+                    .success(true)
+                    .accessToken(accessToken)
+                    .build();
 
             log.info("Authentication successful for user: {}", user.getEmail());
             return ResponseEntity.ok(response);
         } catch (BadCredentialsException | UsernameNotFoundException e) {
             log.error("Authentication failed for user: {}", request.getEmail());
-            return buildErrorResponse("Authentication failed. Please check your credentials.", HttpStatus.UNAUTHORIZED);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(AuthResponseSuccessDto.builder().success(false).build());
         } catch (Exception e) {
             log.error("Unexpected error during authentication for user: {}", request.getEmail(), e);
-            return buildErrorResponse("An unexpected error occurred.", HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(AuthResponseSuccessDto.builder().success(false).build());
         }
-    }
-
-    private AuthResponseSuccessDto buildSuccessResponse(UserEntity user, String accessToken) {
-        return AuthResponseSuccessDto.builder()
-                .success(true)
-                .accessToken(accessToken)
-                .userId(user.getId())
-                .customerId(user.getCustomerId() != null ? user.getCustomerId() : 0)
-                .courierId(user.getCourierId() != null ? user.getCourierId() : 0)
-                .build();
-    }
-
-    private ResponseEntity<AuthResponseErrorDto> buildErrorResponse(String message, HttpStatus status) {
-        AuthResponseErrorDto errorResponse = AuthResponseErrorDto.builder()
-                .success(false)
-                .message(message)
-                .build();
-        return ResponseEntity.status(status).body(errorResponse);
     }
 }

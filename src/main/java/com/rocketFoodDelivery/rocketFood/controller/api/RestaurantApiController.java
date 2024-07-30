@@ -46,11 +46,16 @@ public class RestaurantApiController {
 
     @GetMapping
     public ResponseEntity<?> getRestaurants(@RequestParam(required = false) Integer rating,
-            @RequestParam(required = false) Integer priceRange) {
-        log.info("Fetching restaurants with rating: {} and price range: {}", rating, priceRange);
+            @RequestParam(name = "price_range", required = false) Integer priceRange) {
+        log.info("Received GET request to fetch restaurants with rating: {} and price range: {}", rating, priceRange);
+
+        if (priceRange == null) {
+            log.warn("Price range is null");
+        } else {
+            log.info("Price range is: {}", priceRange);
+        }
 
         try {
-            log.info("Calling service to fetch filtered restaurants.");
             List<ApiRestaurantDto> restaurants = restaurantService.getRestaurants(rating, priceRange);
             log.info("Fetched restaurants: {}", restaurants);
             return ResponseBuilder.buildResponse("Success", restaurants, 200);

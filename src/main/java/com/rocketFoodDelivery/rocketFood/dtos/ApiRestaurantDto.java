@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -20,4 +21,7 @@ public class ApiRestaurantDto {
     int priceRange;
 
     int rating;
+
+    @JsonProperty("address")
+    ApiAddressDto address;
 }

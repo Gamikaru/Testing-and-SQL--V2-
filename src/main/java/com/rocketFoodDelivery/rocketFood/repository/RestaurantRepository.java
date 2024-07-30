@@ -1,6 +1,8 @@
 package com.rocketFoodDelivery.rocketFood.repository;
 
 import com.rocketFoodDelivery.rocketFood.models.Restaurant;
+import com.rocketFoodDelivery.rocketFood.models.UserEntity;
+import com.rocketFoodDelivery.rocketFood.models.Address;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -15,21 +17,23 @@ import java.util.Optional;
 public interface RestaurantRepository extends JpaRepository<Restaurant, Integer> {
         Optional<Restaurant> findByUserEntityId(int userId);
 
-        @Query(nativeQuery = true, value = "SELECT r.id, r.name, r.price_range, COALESCE(CEIL(SUM(o.restaurant_rating) / NULLIF(COUNT(o.id), 0)), 0) AS rating "
+        @Query(nativeQuery = true, value = "SELECT r.id, r.name, r.price_range, "
+                        + "COALESCE(CEIL(SUM(o.restaurant_rating) / NULLIF(COUNT(o.id), 0)), 0) AS rating, r.address_id "
                         + "FROM restaurants r "
                         + "LEFT JOIN orders o ON r.id = o.restaurant_id "
-                        + "WHERE r.id = :restaurantId "
-                        + "GROUP BY r.id")
-        List<Object[]> findRestaurantWithAverageRatingById(@Param("restaurantId") int restaurantId);
-
-        @Query(nativeQuery = true, value = "SELECT r.id, r.name, r.price_range, COALESCE(CEIL(SUM(o.restaurant_rating) / NULLIF(COUNT(o.id), 0)), 0) AS rating "
-                        + "FROM restaurants r "
-                        + "LEFT JOIN orders o ON r.id = o.restaurant_id "
-                        + "WHERE (:priceRange IS NULL OR r.price_range = :priceRange) "
-                        + "GROUP BY r.id "
-                        + "HAVING (:rating IS NULL OR rating = :rating)")
+                        + "GROUP BY r.id, r.name, r.price_range, r.address_id "
+                        + "HAVING (:priceRange IS NULL OR r.price_range = :priceRange) "
+                        + "AND (:rating IS NULL OR rating = :rating)")
         List<Object[]> findRestaurantsByRatingAndPriceRange(@Param("rating") Integer rating,
                         @Param("priceRange") Integer priceRange);
+
+        @Query(nativeQuery = true, value = "SELECT r.id, r.name, r.price_range, COALESCE(CEIL(SUM(o.restaurant_rating) / NULLIF(COUNT(o.id), 0)), 0) AS rating, r.address_id "
+                        +
+                        "FROM restaurants r " +
+                        "LEFT JOIN orders o ON r.id = o.restaurant_id " +
+                        "WHERE r.id = :restaurantId " +
+                        "GROUP BY r.id, r.name, r.price_range, r.address_id")
+        List<Object[]> findRestaurantWithAverageRatingById(@Param("restaurantId") int restaurantId);
 
         @Modifying
         @Transactional
@@ -57,4 +61,6 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Integer>
         @Transactional
         @Query(nativeQuery = true, value = "DELETE FROM restaurants WHERE id = :restaurantId")
         void deleteRestaurantById(@Param("restaurantId") int restaurantId);
+
+        Optional<Restaurant> findByUserEntityAndAddress(UserEntity userEntity, Address address);
 }
