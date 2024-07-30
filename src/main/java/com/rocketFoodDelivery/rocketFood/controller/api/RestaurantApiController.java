@@ -6,6 +6,7 @@ import com.rocketFoodDelivery.rocketFood.exception.ValidationException;
 import com.rocketFoodDelivery.rocketFood.exception.ResourceNotFoundException;
 import com.rocketFoodDelivery.rocketFood.service.RestaurantService;
 import com.rocketFoodDelivery.rocketFood.util.ResponseBuilder;
+
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 @Slf4j
 @RestController
@@ -92,7 +95,15 @@ public class RestaurantApiController {
             log.info("Validating updated restaurant data: {}", restaurantDto);
             ApiRestaurantDto updatedRestaurant = restaurantService.updateRestaurant(id, restaurantDto);
             log.info("Restaurant updated successfully: {}", updatedRestaurant);
-            return ResponseBuilder.buildResponse("Success", updatedRestaurant, 200);
+
+            // Create a response that matches the required structure
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", updatedRestaurant.getId());
+            response.put("name", updatedRestaurant.getName());
+            response.put("price_range", updatedRestaurant.getPriceRange());
+            response.put("rating", updatedRestaurant.getRating());
+
+            return ResponseEntity.status(200).body(response);
         } catch (ValidationException ex) {
             log.error("Validation error: {}", ex.getMessage());
             return ResponseBuilder.buildBadRequestResponse("Validation failed: " + ex.getMessage());
@@ -111,9 +122,17 @@ public class RestaurantApiController {
 
         try {
             log.info("Calling service to delete restaurant.");
-            restaurantService.deleteRestaurant(id);
+            ApiRestaurantDto deletedRestaurant = restaurantService.deleteRestaurant(id);
             log.info("Restaurant deleted successfully: {}", id);
-            return ResponseBuilder.buildResponse("Success", "Restaurant deleted successfully", 200);
+
+            // Create a response that matches the required structure
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", deletedRestaurant.getId());
+            response.put("name", deletedRestaurant.getName());
+            response.put("price_range", deletedRestaurant.getPriceRange());
+            response.put("rating", deletedRestaurant.getRating());
+
+            return ResponseBuilder.buildResponse("Success", response, 200);
         } catch (ResourceNotFoundException ex) {
             log.error("Restaurant not found with ID: {}", id);
             return ResponseBuilder.buildNotFoundResponse("Restaurant with id " + id + " not found");
