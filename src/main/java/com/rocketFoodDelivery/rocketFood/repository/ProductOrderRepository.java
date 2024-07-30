@@ -14,7 +14,6 @@ import java.util.Optional;
 @Repository
 public interface ProductOrderRepository extends JpaRepository<ProductOrder, Integer> {
 
-    // TODO
     @Modifying
     @Transactional
     @Query(nativeQuery = true, value = "DELETE FROM product_orders WHERE order_id = :orderId")
@@ -23,7 +22,6 @@ public interface ProductOrderRepository extends JpaRepository<ProductOrder, Inte
     Optional<ProductOrder> findById(int id);
 
     Optional<ProductOrder> findByOrderIdAndProductId(int orderId, int productId);
-
 
     List<ProductOrder> findByOrderId(int id);
 

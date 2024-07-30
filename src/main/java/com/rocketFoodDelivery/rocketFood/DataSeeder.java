@@ -76,7 +76,7 @@
 //         List<UserEntity> users = new ArrayList<>();
 //         for (int i = 0; i < 20; i++) {
 //             UserEntity user = UserEntity.builder()
-//                     .name(faker.name().name())
+//                     .name(faker.name().name()) // Ensure the name is set
 //                     .email(faker.internet().emailAddress())
 //                     .password("password" + i)
 //                     .build();
@@ -274,6 +274,7 @@
 //                 Customer customer = Customer.builder()
 //                         .userEntity(user)
 //                         .address(address)
+//                         .name(user.getName()) // Ensure the name is set
 //                         .email(uniqueEmail)
 //                         .phone("+1 43" + i + " - 221 - 698" + i)
 //                         .active(true)
@@ -314,6 +315,7 @@
 //                 Courier courier = Courier.builder()
 //                         .userEntity(user)
 //                         .address(address)
+//                         .name(user.getName()) // Ensure the name is set
 //                         .email(faker.internet().emailAddress())
 //                         .phone("+1 4" + i + "7 - 221 - 698" + i)
 //                         .courierStatus(courierStatuses.get(random.nextInt(4)))
@@ -325,4 +327,5 @@
 //         }
 //         courierRepository.saveAll(couriers);
 //     }
+
 // }

@@ -16,7 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -64,8 +66,9 @@ public class RestaurantService {
         log.info("Fetching restaurants with rating: {} and price range: {}", rating, priceRange);
 
         List<Object[]> restaurantData = restaurantRepository.findRestaurantsByRatingAndPriceRange(rating, priceRange);
+        log.info("Retrieved restaurant data: {}",
+                restaurantData.stream().map(Arrays::toString).collect(Collectors.joining(", ")));
 
-        log.info("Converting entities to DTOs: {}", restaurantData);
         return restaurantData.stream()
                 .map(this::mapToApiRestaurantDtoFromData)
                 .collect(Collectors.toList());
@@ -165,20 +168,43 @@ public class RestaurantService {
                 .name(restaurant.getName())
                 .priceRange(restaurant.getPriceRange())
                 .rating(calculateRestaurantRating(restaurant))
+                .address(mapToApiAddressDto(restaurant.getAddress())) // Include address in DTO
                 .build();
     }
 
     private ApiRestaurantDto mapToApiRestaurantDtoFromData(Object[] data) {
-        return ApiRestaurantDto.builder()
+        log.info("Mapping restaurant data to DTO: {}", Arrays.toString(data));
+        Address address = addressRepository.findById((Integer) data[4]).orElse(null);
+        ApiRestaurantDto restaurantDto = ApiRestaurantDto.builder()
                 .id((Integer) data[0])
                 .name((String) data[1])
                 .priceRange((Integer) data[2])
-                .rating((Integer) data[3])
+                .rating(((BigDecimal) data[3]).intValue())
+                .address(mapToApiAddressDto(address))
                 .build();
+        log.info("Mapped restaurant DTO: {}", restaurantDto);
+        return restaurantDto;
     }
 
     private int calculateRestaurantRating(Restaurant restaurant) {
+        log.info("Calculating rating for restaurant: {}", restaurant.getId());
         List<Object[]> ratingData = restaurantRepository.findRestaurantWithAverageRatingById(restaurant.getId());
-        return ratingData.isEmpty() ? 0 : (int) ratingData.get(0)[3];
+        int rating = ratingData.isEmpty() ? 0 : ((BigDecimal) ratingData.get(0)[3]).intValue();
+        log.info("Calculated rating: {}", rating);
+        return rating;
+    }
+
+    private ApiAddressDto mapToApiAddressDto(Address address) {
+        if (address == null) {
+            return null;
+        }
+        ApiAddressDto addressDto = ApiAddressDto.builder()
+                .id(address.getId())
+                .streetAddress(address.getStreetAddress())
+                .city(address.getCity())
+                .postalCode(address.getPostalCode())
+                .build();
+        log.info("Mapped address DTO: {}", addressDto);
+        return addressDto;
     }
 }
