@@ -29,6 +29,7 @@
 │   │   │               │   ├── ApiPostAccountDto.java
 │   │   │               │   ├── ApiProductDto.java
 │   │   │               │   ├── ApiProductForOrderApiDto.java
+│   │   │               │   ├── ApiProductOrderRequestDto.java
 │   │   │               │   ├── ApiResponseDto.java
 │   │   │               │   ├── ApiResponseStatusDto.java
 │   │   │               │   ├── ApiRestaurantDto.java
@@ -135,6 +136,7 @@
     │   │           │   ├── ApiProductDto$ApiProductDtoBuilder.class
     │   │           │   ├── ApiProductDto.class
     │   │           │   ├── ApiProductForOrderApiDto.class
+    │   │           │   ├── ApiProductOrderRequestDto.class
     │   │           │   ├── ApiResponseDto$ApiResponseDtoBuilder.class
     │   │           │   ├── ApiResponseDto.class
     │   │           │   ├── ApiResponseStatusDto$ApiResponseStatusDtoBuilder.class
@@ -218,6 +220,8 @@
     │   └── annotations
     ├── generated-test-sources
     │   └── test-annotations
+    ├── maven-archiver
+    │   └── pom.properties
     ├── maven-status
     │   └── maven-compiler-plugin
     │       ├── compile
@@ -228,25 +232,9 @@
     │           └── default-testCompile
     │               ├── createdFiles.lst
     │               └── inputFiles.lst
-    ├── surefire-reports
-    │   ├── TEST-com.rocketFoodDelivery.rocketFood.api.AuthControllerTest.xml
-    │   ├── TEST-com.rocketFoodDelivery.rocketFood.api.OrderApiControllerTest.xml
-    │   ├── TEST-com.rocketFoodDelivery.rocketFood.api.ProductApiControllerTest.xml
-    │   ├── TEST-com.rocketFoodDelivery.rocketFood.api.RestaurantApiControllerTest.xml
-    │   ├── com.rocketFoodDelivery.rocketFood.api.AuthControllerTest.txt
-    │   ├── com.rocketFoodDelivery.rocketFood.api.OrderApiControllerTest.txt
-    │   ├── com.rocketFoodDelivery.rocketFood.api.ProductApiControllerTest.txt
-    │   └── com.rocketFoodDelivery.rocketFood.api.RestaurantApiControllerTest.txt
+    ├── rocketFood-0.0.1-SNAPSHOT.jar
+    ├── rocketFood-0.0.1-SNAPSHOT.jar.original
     └── test-classes
-        ├── application-test.properties
-        └── com
-            └── rocketFoodDelivery
-                └── rocketFood
-                    └── api
-                        ├── AuthControllerTest.class
-                        ├── OrderApiControllerTest.class
-                        ├── ProductApiControllerTest.class
-                        ├── RestaurantApiControllerTest$TestSecurityConfig.class
-                        └── RestaurantApiControllerTest.class
+        └── application-test.properties
 
-55 directories, 194 files
+51 directories, 186 files

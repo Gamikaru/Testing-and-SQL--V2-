@@ -1,100 +1,131 @@
-// package com.rocketFoodDelivery.rocketFood.api;
+package com.rocketFoodDelivery.rocketFood.api;
 
-// import com.rocketFoodDelivery.rocketFood.controller.api.ProductApiController;
-// import com.rocketFoodDelivery.rocketFood.dtos.ApiProductDto;
-// import com.rocketFoodDelivery.rocketFood.dtos.ApiResponseDto;
-// import com.rocketFoodDelivery.rocketFood.service.ProductService;
-// import com.rocketFoodDelivery.rocketFood.util.ResponseBuilder;
-// import org.junit.jupiter.api.BeforeEach;
-// import org.junit.jupiter.api.Test;
-// import org.mockito.InjectMocks;
-// import org.mockito.Mock;
-// import org.mockito.MockitoAnnotations;
-// import org.springframework.http.ResponseEntity;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rocketFoodDelivery.rocketFood.RocketFoodApplication;
+import com.rocketFoodDelivery.rocketFood.dtos.ApiProductDto;
+import com.rocketFoodDelivery.rocketFood.service.ProductService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
 
-// import java.util.Collections;
-// import java.util.List;
+import java.util.Collections;
+import java.util.List;
 
-// import static org.junit.jupiter.api.Assertions.assertEquals;
-// import static org.mockito.Mockito.*;
+import static org.hamcrest.Matchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// public class ProductApiControllerTest {
+// Define the Spring Boot test class for ProductApiController
+@SpringBootTest(classes = RocketFoodApplication.class)
+@AutoConfigureMockMvc
+@TestPropertySource(locations = "classpath:application-test.properties")
+public class ProductApiControllerTest {
 
-//     @InjectMocks
-//     private ProductApiController productApiController;
+    @Autowired
+    private MockMvc mockMvc; // MockMvc to perform HTTP requests in tests
 
-//     @Mock
-//     private ProductService productService;
+    @MockBean
+    private ProductService productService; // Mock ProductService bean
 
-//     @BeforeEach
-//     public void setup() {
-//         MockitoAnnotations.openMocks(this);
-//     }
+    @Autowired
+    private ObjectMapper objectMapper; // ObjectMapper for JSON serialization/deserialization
 
-//     @Test
-//     public void testGetProducts() {
-//         Integer restaurantId = 1;
-//         ApiProductDto productDto = ApiProductDto.builder().id(1).name("Cheeseburger").cost(525).build();
-//         List<ApiProductDto> products = Collections.singletonList(productDto);
+    // Define constants for reuse
+    private static final String BASE_URI = "/api/products";
+    private static final Integer VALID_RESTAURANT_ID = 1;
+    private static final Integer INVALID_RESTAURANT_ID = -1;
+    private static final String SUCCESS_MESSAGE = "Success";
+    private static final String RESOURCE_NOT_FOUND_MESSAGE = "Resource not found";
+    private static final String INTERNAL_SERVER_ERROR_MESSAGE = "Internal server error";
 
-//         when(productService.getProductsByRestaurantId(restaurantId)).thenReturn(products);
+    private ApiProductDto productDto; // DTO for product
 
-//         ResponseEntity<?> responseEntity = productApiController.getProducts(restaurantId);
-//         assertEquals(200, responseEntity.getStatusCodeValue());
+    // Initialize test data before each test
+    @BeforeEach
+    public void setUp() {
+        productDto = ApiProductDto.builder().id(1).name("Cheeseburger").cost(525).build();
+    }
 
-//         ApiResponseDto responseBody = (ApiResponseDto) responseEntity.getBody();
-//         assertEquals("Success", responseBody.getMessage());
-//         assertEquals(products, responseBody.getData());
+    // Test fetching products successfully
+    @Test
+    @WithMockUser
+    public void testGetProducts() throws Exception {
+        // Setup mock products list
+        List<ApiProductDto> products = Collections.singletonList(productDto);
+        // Mock the behavior of productService
+        Mockito.when(productService.getProductsByRestaurantId(VALID_RESTAURANT_ID)).thenReturn(products);
 
-//         verify(productService, times(1)).getProductsByRestaurantId(restaurantId);
-//     }
+        // Perform GET request to fetch products and verify the response
+        performGetRequest(VALID_RESTAURANT_ID, 200, SUCCESS_MESSAGE, products);
+    }
 
-//     @Test
-//     public void testGetProducts_NoProductsFound() {
-//         Integer restaurantId = 1;
+    // Test fetching products when no products are found
+    @Test
+    @WithMockUser
+    public void testGetProducts_NoProductsFound() throws Exception {
+        // Mock the behavior of productService to return empty list
+        Mockito.when(productService.getProductsByRestaurantId(VALID_RESTAURANT_ID)).thenReturn(Collections.emptyList());
 
-//         when(productService.getProductsByRestaurantId(restaurantId)).thenReturn(Collections.emptyList());
+        // Perform GET request to fetch products and verify the response
+        performGetRequest(VALID_RESTAURANT_ID, 404, RESOURCE_NOT_FOUND_MESSAGE, null);
+    }
 
-//         ResponseEntity<?> responseEntity = productApiController.getProducts(restaurantId);
-//         assertEquals(200, responseEntity.getStatusCodeValue());
+    // Test fetching products when an internal server error occurs
+    @Test
+    @WithMockUser
+    public void testGetProducts_InternalServerError() throws Exception {
+        // Mock the behavior of productService to throw exception
+        Mockito.when(productService.getProductsByRestaurantId(VALID_RESTAURANT_ID))
+                .thenThrow(new RuntimeException(INTERNAL_SERVER_ERROR_MESSAGE));
 
-//         ApiResponseDto responseBody = (ApiResponseDto) responseEntity.getBody();
-//         assertEquals("Success", responseBody.getMessage());
-//         assertEquals(Collections.emptyList(), responseBody.getData());
+        // Perform GET request to fetch products and verify the response
+        performGetRequest(VALID_RESTAURANT_ID, 500, INTERNAL_SERVER_ERROR_MESSAGE, null);
+    }
 
-//         verify(productService, times(1)).getProductsByRestaurantId(restaurantId);
-//     }
+    // Test fetching products with an invalid restaurant ID
+    @Test
+    @WithMockUser
+    public void testGetProducts_InvalidRestaurantId() throws Exception {
+        // Mock the behavior of productService to return empty list
+        Mockito.when(productService.getProductsByRestaurantId(INVALID_RESTAURANT_ID))
+                .thenReturn(Collections.emptyList());
 
-//     @Test
-//     public void testGetProducts_InternalServerError() {
-//         Integer restaurantId = 1;
+        // Perform GET request to fetch products and verify the response
+        performGetRequest(INVALID_RESTAURANT_ID, 404, RESOURCE_NOT_FOUND_MESSAGE, null);
+    }
 
-//         when(productService.getProductsByRestaurantId(restaurantId))
-//                 .thenThrow(new RuntimeException("Internal server error"));
+    // Helper method to perform GET request and verify the response
+    private void performGetRequest(Integer restaurantId, int expectedStatus, String expectedMessage,
+            List<ApiProductDto> expectedData) throws Exception {
+        // Perform GET request
+        mockMvc.perform(get(BASE_URI)
+                .param("restaurant", restaurantId.toString())
+                .contentType(MediaType.APPLICATION_JSON))
+                // Verify status and message
+                .andExpect(status().is(expectedStatus))
+                .andExpect(jsonPath("$.message").value(expectedMessage))
+                // Verify data if not null, else expect null
+                .andExpect(jsonPath("$.data", expectedData == null ? nullValue() : hasSize(expectedData.size())));
 
-//         ResponseEntity<?> responseEntity = productApiController.getProducts(restaurantId);
-//         assertEquals(500, responseEntity.getStatusCodeValue());
-
-//         ApiResponseDto responseBody = (ApiResponseDto) responseEntity.getBody();
-//         assertEquals("Internal server error", responseBody.getMessage());
-//         assertEquals(null, responseBody.getData());
-
-//         verify(productService, times(1)).getProductsByRestaurantId(restaurantId);
-//     }
-
-//     @Test
-//     public void testGetProducts_InvalidRestaurantId() {
-//         Integer invalidRestaurantId = -1;
-
-//         when(productService.getProductsByRestaurantId(invalidRestaurantId)).thenReturn(Collections.emptyList());
-
-//         ResponseEntity<?> responseEntity = productApiController.getProducts(invalidRestaurantId);
-//         assertEquals(200, responseEntity.getStatusCodeValue());
-
-//         ApiResponseDto responseBody = (ApiResponseDto) responseEntity.getBody();
-//         assertEquals("Success", responseBody.getMessage());
-//         assertEquals(Collections.emptyList(), responseBody.getData());
-
-//         verify(productService, times(1)).getProductsByRestaurantId(invalidRestaurantId);
-//     }
-// }
+        // If expectedData is not null, verify each product
+        if (expectedData != null) {
+            for (int i = 0; i < expectedData.size(); i++) {
+                ApiProductDto expectedProduct = expectedData.get(i);
+                mockMvc.perform(get(BASE_URI)
+                        .param("restaurant", restaurantId.toString())
+                        .contentType(MediaType.APPLICATION_JSON))
+                        // Verify product details
+                        .andExpect(jsonPath("$.data[" + i + "].name", is(expectedProduct.getName())))
+                        .andExpect(jsonPath("$.data[" + i + "].cost", is(expectedProduct.getCost())));
+            }
+        }
+    }
+}

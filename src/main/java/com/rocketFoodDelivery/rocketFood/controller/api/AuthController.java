@@ -36,31 +36,49 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @PostMapping("/login")
+    /**
+     * Authenticates the user and generates a JWT token if successful.
+     * 
+     * @param request The authentication request containing email and password.
+     * @return ResponseEntity containing the authentication result.
+     */
+    @PostMapping
     public ResponseEntity<?> authenticate(@RequestBody @Valid AuthRequestDto request) {
         log.info("Attempting authentication for user: {}", request.getEmail());
 
         try {
+            // Attempt to authenticate the user with the provided email and password
             Authentication authentication = authManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
             UserEntity user = (UserEntity) authentication.getPrincipal();
+
+            // Generate JWT token if authentication is successful
             String accessToken = jwtUtil.generateAccessToken(user);
 
+            // Build the success response DTO
             AuthResponseSuccessDto response = AuthResponseSuccessDto.builder()
                     .success(true)
                     .accessToken(accessToken)
                     .build();
 
             log.info("Authentication successful for user: {}", user.getEmail());
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(response); // Return 200 OK with the token
         } catch (BadCredentialsException | UsernameNotFoundException e) {
             log.error("Authentication failed for user: {}", request.getEmail());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(AuthResponseSuccessDto.builder().success(false).build());
+            // Build the error response DTO
+            AuthResponseErrorDto response = AuthResponseErrorDto.builder()
+                    .success(false)
+                    .message("Invalid email or password")
+                    .build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         } catch (Exception e) {
             log.error("Unexpected error during authentication for user: {}", request.getEmail(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(AuthResponseSuccessDto.builder().success(false).build());
+            // Build the error response DTO
+            AuthResponseErrorDto response = AuthResponseErrorDto.builder()
+                    .success(false)
+                    .message("Unexpected error occurred")
+                    .build();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 }

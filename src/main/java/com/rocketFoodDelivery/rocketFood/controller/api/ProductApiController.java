@@ -1,6 +1,7 @@
 package com.rocketFoodDelivery.rocketFood.controller.api;
 
 import com.rocketFoodDelivery.rocketFood.dtos.ApiProductDto;
+import com.rocketFoodDelivery.rocketFood.exception.ResourceNotFoundException;
 import com.rocketFoodDelivery.rocketFood.service.ProductService;
 import com.rocketFoodDelivery.rocketFood.util.ResponseBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,9 @@ public class ProductApiController {
 
         try {
             List<ApiProductDto> products = productService.getProductsByRestaurantId(restaurant);
+            if (products.isEmpty()) {
+                return ResponseBuilder.buildNotFoundResponse("Resource not found");
+            }
             log.info("Fetched products: {}", products);
             return ResponseBuilder.buildResponse("Success", products, 200);
         } catch (Exception ex) {

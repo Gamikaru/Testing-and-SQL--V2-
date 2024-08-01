@@ -1,11 +1,11 @@
 package com.rocketFoodDelivery.rocketFood.controller.api;
 
+import com.rocketFoodDelivery.rocketFood.dtos.ApiOrderRequestDto;
 import com.rocketFoodDelivery.rocketFood.dtos.ApiOrderStatusDto;
+import com.rocketFoodDelivery.rocketFood.dtos.ApiOrderDto;
 import com.rocketFoodDelivery.rocketFood.service.OrderService;
 import com.rocketFoodDelivery.rocketFood.util.ResponseBuilder;
-import com.rocketFoodDelivery.rocketFood.dtos.ApiOrderDto;
-import com.rocketFoodDelivery.rocketFood.dtos.ApiOrderRequestDto;
-
+import com.rocketFoodDelivery.rocketFood.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,7 +14,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/order")
+@RequestMapping("/api/orders")
 public class OrderApiController {
 
     private final OrderService orderService;
@@ -23,16 +23,45 @@ public class OrderApiController {
         this.orderService = orderService;
     }
 
+    /**
+     * Change the status of an order.
+     * 
+     * @param orderId        The ID of the order to change.
+     * @param orderStatusDto The new status of the order.
+     * @return ResponseEntity with the result of the operation.
+     */
     @PostMapping("/{order_id}/status")
     public ResponseEntity<?> changeOrderStatus(@PathVariable("order_id") Integer orderId,
             @RequestBody ApiOrderStatusDto orderStatusDto) {
         log.info("Changing status of order ID: {} to {}", orderId, orderStatusDto.getStatus());
 
-        String newStatus = orderService.changeOrderStatus(orderId, orderStatusDto);
-        log.info("Order status changed successfully: {}", newStatus);
-        return ResponseBuilder.buildResponse("Success", newStatus, 200);
+        try {
+            validateOrderStatus(orderStatusDto);
+
+            String newStatus = orderService.changeOrderStatus(orderId, orderStatusDto);
+            log.info("Order status changed successfully: {}", newStatus);
+
+            ApiOrderStatusDto responseDto = ApiOrderStatusDto.builder().status(newStatus).build();
+            return buildSuccessResponse("Success", responseDto);
+        } catch (ResourceNotFoundException ex) {
+            log.error("Order not found with ID: {}", orderId);
+            return ResponseBuilder.buildNotFoundResponse("Order with id " + orderId + " not found");
+        } catch (IllegalArgumentException ex) {
+            log.error("Invalid status parameter: {}", ex.getMessage());
+            return ResponseBuilder.buildBadRequestResponse("Invalid or missing parameters");
+        } catch (Exception ex) {
+            log.error("Exception occurred while changing order status: {}", ex.getMessage(), ex);
+            return ResponseBuilder.buildErrorResponse("Internal server error", 500);
+        }
     }
 
+    /**
+     * Fetch orders based on type and ID.
+     * 
+     * @param type The type of orders to fetch.
+     * @param id   The ID associated with the type.
+     * @return ResponseEntity with the list of orders.
+     */
     @GetMapping
     public ResponseEntity<?> getOrders(@RequestParam String type, @RequestParam Integer id) {
         log.info("Fetching orders for type: {} with ID: {}", type, id);
@@ -40,27 +69,62 @@ public class OrderApiController {
         try {
             List<ApiOrderDto> orders = orderService.getOrdersByTypeAndId(type, id);
             log.info("Fetched orders: {}", orders);
-            return ResponseBuilder.buildResponse("Success", orders, 200);
+            return buildSuccessResponse("Success", orders);
         } catch (IllegalArgumentException ex) {
-            log.error("Invalid type provided: {}", ex.getMessage());
-            throw ex; // Ensure this exception is thrown to be caught by the GlobalExceptionHandler
+            log.error("Invalid type provided: {}", ex.getMessage(), ex);
+            return ResponseBuilder.buildBadRequestResponse("Invalid or missing parameters");
         } catch (Exception ex) {
-            log.error("Exception occurred while fetching orders: {}", ex.getMessage());
+            log.error("Exception occurred while fetching orders: {}", ex.getMessage(), ex);
             return ResponseBuilder.buildErrorResponse("Internal server error", 500);
         }
     }
 
+    /**
+     * Create a new order.
+     * 
+     * @param orderRequestDto The order details.
+     * @return ResponseEntity with the created order details.
+     */
     @PostMapping
     public ResponseEntity<?> createOrder(@RequestBody ApiOrderRequestDto orderRequestDto) {
-        log.info("Creating a new order");
+        log.info("Received order creation request: {}", orderRequestDto);
 
         try {
-            ApiOrderDto newOrder = orderService.createOrder(orderRequestDto);
-            log.info("Order created successfully: {}", newOrder);
-            return ResponseBuilder.buildResponse("Success", newOrder, 200);
+            ApiOrderDto orderDto = orderService.createOrder(orderRequestDto);
+            log.debug("Order created: {}", orderDto);
+            return ResponseBuilder.buildResponse("Success", orderDto, 201);
+        } catch (ResourceNotFoundException ex) {
+            log.error("Resource not found: {}", ex.getMessage());
+            return ResponseBuilder.buildNotFoundResponse(ex.getMessage());
         } catch (Exception ex) {
-            log.error("Exception occurred while creating order: {}", ex.getMessage());
+            log.error("Unexpected error: {}", ex.getMessage());
             return ResponseBuilder.buildErrorResponse("Internal server error", 500);
         }
+    }
+
+    /**
+     * Validate the order status DTO.
+     * 
+     * @param orderStatusDto The order status DTO to validate.
+     * @throws IllegalArgumentException if status is invalid.
+     */
+    private void validateOrderStatus(ApiOrderStatusDto orderStatusDto) {
+        if (orderStatusDto.getStatus() == null || orderStatusDto.getStatus().isEmpty()) {
+            log.error("Invalid or missing parameters");
+            throw new IllegalArgumentException("Invalid or missing parameters");
+        }
+    }
+
+    /**
+     * Build a success response.
+     * 
+     * @param message The success message.
+     * @param data    The response data.
+     * @return ResponseEntity with success message and data.
+     */
+    private ResponseEntity<?> buildSuccessResponse(String message, Object data) {
+        ResponseEntity<?> response = ResponseBuilder.buildResponse(message, data, 200);
+        log.info("Response: {}", response.getBody());
+        return response;
     }
 }

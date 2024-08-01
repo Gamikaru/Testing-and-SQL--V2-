@@ -14,6 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -52,10 +55,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponseStatusDto> handleMethodArgumentNotValidException(
             MethodArgumentNotValidException ex) {
         log.error("Validation error: {}", ex.getMessage(), ex);
+
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors()
+                .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
+
+        String message = errors.values().stream().findFirst().orElse("Invalid or missing parameters");
         ApiResponseStatusDto response = ApiResponseStatusDto.builder()
                 .success(false)
-                .message("Invalid or missing parameters")
+                .message(message)
                 .build();
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 

@@ -7,10 +7,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import java.util.List;
-
 
 @Data
 @NoArgsConstructor
@@ -24,11 +24,11 @@ public class Restaurant {
     private int id;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false) // Ensure user_id is not nullable
     private UserEntity userEntity;
 
     @ManyToOne(cascade = CascadeType.REMOVE)
-    @JoinColumn(name = "address_id", unique = true, nullable = false)
+    @JoinColumn(name = "address_id", unique = true, nullable = false) // Ensure address_id is unique and not nullable
     private Address address;
 
     @Column(nullable = false)
@@ -45,11 +45,23 @@ public class Restaurant {
     @Column(nullable = false)
     private String email;
 
-    
-    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true) // Added cascade and orphan removal
-    private List<Product> products; // Added products relationship
+    @Column(nullable = false)
+    private boolean active; // Add active field to match schema
+
+    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<Product> products;
+
+    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonBackReference
+    private List<Order> orders;
 
     public Restaurant(int id) {
         this.id = id;
+    }
+
+    @JsonBackReference
+    public List<Order> getOrders() {
+        return orders;
     }
 }

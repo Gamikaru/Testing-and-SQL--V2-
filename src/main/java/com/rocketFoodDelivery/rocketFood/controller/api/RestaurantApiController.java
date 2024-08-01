@@ -14,8 +14,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
 @Slf4j
 @RestController
@@ -95,15 +93,7 @@ public class RestaurantApiController {
             log.info("Validating updated restaurant data: {}", restaurantDto);
             ApiRestaurantDto updatedRestaurant = restaurantService.updateRestaurant(id, restaurantDto);
             log.info("Restaurant updated successfully: {}", updatedRestaurant);
-
-            // Create a response that matches the required structure
-            Map<String, Object> response = new HashMap<>();
-            response.put("id", updatedRestaurant.getId());
-            response.put("name", updatedRestaurant.getName());
-            response.put("price_range", updatedRestaurant.getPriceRange());
-            response.put("rating", updatedRestaurant.getRating());
-
-            return ResponseEntity.status(200).body(response);
+            return ResponseBuilder.buildResponse("Success", updatedRestaurant, 200);
         } catch (ValidationException ex) {
             log.error("Validation error: {}", ex.getMessage());
             return ResponseBuilder.buildBadRequestResponse("Validation failed: " + ex.getMessage());
@@ -124,15 +114,7 @@ public class RestaurantApiController {
             log.info("Calling service to delete restaurant.");
             ApiRestaurantDto deletedRestaurant = restaurantService.deleteRestaurant(id);
             log.info("Restaurant deleted successfully: {}", id);
-
-            // Create a response that matches the required structure
-            Map<String, Object> response = new HashMap<>();
-            response.put("id", deletedRestaurant.getId());
-            response.put("name", deletedRestaurant.getName());
-            response.put("price_range", deletedRestaurant.getPriceRange());
-            response.put("rating", deletedRestaurant.getRating());
-
-            return ResponseBuilder.buildResponse("Success", response, 200);
+            return ResponseBuilder.buildResponse("Success", deletedRestaurant, 200);
         } catch (ResourceNotFoundException ex) {
             log.error("Restaurant not found with ID: {}", id);
             return ResponseBuilder.buildNotFoundResponse("Restaurant with id " + id + " not found");
@@ -141,23 +123,4 @@ public class RestaurantApiController {
             return ResponseBuilder.buildErrorResponse("Internal server error", 500);
         }
     }
-
-    @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<?> handleValidationException(ValidationException ex) {
-        log.error("Validation error: {}", ex.getMessage());
-        return ResponseBuilder.buildBadRequestResponse("Invalid or missing parameters");
-    }
-
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<?> handleResourceNotFoundException(ResourceNotFoundException ex) {
-        log.error("Resource not found error: {}", ex.getMessage());
-        return ResponseBuilder.buildErrorResponse(ex.getMessage(), 404); // Change here
-    }
-
-    // Necessary changes in other files:
-    // 1. Change the return type of the method `getRestaurantsByRatingAndPriceRange`
-    // in the `RestaurantService` class to `List<ApiRestaurantDto>`.
-    // 2. Change the return type of the method `getRestaurantsByRatingAndPriceRange`
-    // in the `RestaurantRepository` class to `List<Object[]>`.
-
 }
