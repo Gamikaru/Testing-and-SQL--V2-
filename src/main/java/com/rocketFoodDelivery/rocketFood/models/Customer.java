@@ -8,6 +8,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -42,11 +45,20 @@ public class Customer {
     @Column(nullable = false)
     private String name;
 
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonBackReference
+    private List<Order> orders;
+
     public String getName() {
         return name;
     }
 
     public Customer(int id) {
         this.id = id;
+    }
+
+    @JsonBackReference
+    public List<Order> getOrders() {
+        return orders;
     }
 }

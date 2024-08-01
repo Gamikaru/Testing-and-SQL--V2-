@@ -11,11 +11,6 @@ import java.io.IOException;
 @Slf4j
 public class ResponseBuilder {
 
-    public static ResponseEntity<ApiResponseDto> buildBadRequestResponse(ApiResponseDto response) {
-        log.info("Building BadRequest response: {}", response);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-    }
-
     public static ResponseEntity<ApiResponseDto> buildBadRequestResponse(String message) {
         ApiResponseDto response = ApiResponseDto.builder()
                 .message(message)

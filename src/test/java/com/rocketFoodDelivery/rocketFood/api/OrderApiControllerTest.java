@@ -1,140 +1,206 @@
-// package com.rocketFoodDelivery.rocketFood.api;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rocketFoodDelivery.rocketFood.RocketFoodApplication;
+import com.rocketFoodDelivery.rocketFood.controller.api.OrderApiController;
+import com.rocketFoodDelivery.rocketFood.dtos.*;
+import com.rocketFoodDelivery.rocketFood.exception.ResourceNotFoundException;
+import com.rocketFoodDelivery.rocketFood.service.OrderService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
 
-// import com.rocketFoodDelivery.rocketFood.controller.api.OrderApiController;
-// import com.rocketFoodDelivery.rocketFood.dtos.*;
-// import com.rocketFoodDelivery.rocketFood.exception.ResourceNotFoundException;
-// import com.rocketFoodDelivery.rocketFood.service.OrderService;
-// import org.junit.jupiter.api.BeforeEach;
-// import org.junit.jupiter.api.Test;
-// import org.mockito.InjectMocks;
-// import org.mockito.Mock;
-// import org.mockito.MockitoAnnotations;
-// import org.springframework.http.ResponseEntity;
+import java.util.Arrays;
+import java.util.List;
 
-// import java.util.Arrays;
-// import java.util.List;
+import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// import static org.junit.jupiter.api.Assertions.assertEquals;
-// import static org.junit.jupiter.api.Assertions.assertThrows;
-// import static org.mockito.Mockito.*;
+// Define the Spring Boot test class for OrderApiController
+@SpringBootTest(classes = RocketFoodApplication.class)
+@AutoConfigureMockMvc
+@TestPropertySource(locations = "classpath:application-test.properties")
+public class OrderApiControllerTest {
 
-// public class OrderApiControllerTest {
+        // Define constants for reuse
+        private static final String BASE_URL = "/api/orders";
+        private static final String SUCCESS_MESSAGE = "Success";
+        private static final String NOT_FOUND_MESSAGE = "Order with id 1 not found";
 
-//     @InjectMocks
-//     private OrderApiController orderApiController;
+        @Autowired
+        private MockMvc mockMvc; // MockMvc to perform HTTP requests in tests
 
-//     @Mock
-//     private OrderService orderService;
+        @MockBean
+        private OrderService orderService; // Mock OrderService bean
 
-//     @BeforeEach
-//     public void setup() {
-//         MockitoAnnotations.openMocks(this);
-//     }
+        @Autowired
+        private ObjectMapper objectMapper; // ObjectMapper for JSON serialization/deserialization
 
-//     // Test change order status
-//     @Test
-//     public void testChangeOrderStatus() {
-//         Integer orderId = 1;
-//         ApiOrderStatusDto orderStatusDto = ApiOrderStatusDto.builder().status("delivered").build();
-//         String newStatus = "delivered";
+        @InjectMocks
+        private OrderApiController orderApiController; // Inject mock OrderApiController
 
-//         when(orderService.changeOrderStatus(orderId, orderStatusDto)).thenReturn(newStatus);
+        private ApiOrderRequestDto orderRequestDto; // DTO for order request
+        private ApiOrderDto newOrder; // DTO for new order
+        private ApiOrderStatusDto orderStatusDto; // DTO for order status
+        private Integer orderId; // Order ID
 
-//         ResponseEntity<?> responseEntity = orderApiController.changeOrderStatus(orderId, orderStatusDto);
-//         ApiResponseDto responseBody = (ApiResponseDto) responseEntity.getBody();
+        // Initialize mocks and setup test data before each test
+        @BeforeEach
+        public void setup() {
+                MockitoAnnotations.openMocks(this);
+                setupTestData();
+        }
 
-//         assertEquals(200, responseEntity.getStatusCodeValue());
-//         assertEquals("Success", responseBody.getMessage());
-//         assertEquals(newStatus, responseBody.getData());
+        // Setup test data for use in the tests
+        private void setupTestData() {
+                orderId = 1;
 
-//         verify(orderService, times(1)).changeOrderStatus(orderId, orderStatusDto);
-//     }
+                // Setup order request DTO
+                orderRequestDto = new ApiOrderRequestDto();
+                orderRequestDto.setCustomer_id(1);
+                orderRequestDto.setRestaurant_id(1);
+                orderRequestDto.setProducts(Arrays.asList(
+                                new ApiProductOrderRequestDto(1, 2),
+                                new ApiProductOrderRequestDto(2, 1)));
 
-//     @Test
-//     public void testChangeOrderStatus_NotFound() {
-//         Integer orderId = 1;
-//         ApiOrderStatusDto orderStatusDto = ApiOrderStatusDto.builder().status("delivered").build();
+                // Setup new order DTO
+                newOrder = ApiOrderDto.builder()
+                                .id(1)
+                                .customer_id(1)
+                                .restaurant_id(1)
+                                .status("in progress")
+                                .total_cost(350)
+                                .products(Arrays.asList(
+                                                new ApiProductForOrderApiDto(1, "Pasta with Tomato and Basil", 2, 100,
+                                                                200),
+                                                new ApiProductForOrderApiDto(2, "Tuna Sashimi", 1, 150, 150)))
+                                .build();
 
-//         when(orderService.changeOrderStatus(orderId, orderStatusDto))
-//                 .thenThrow(new ResourceNotFoundException("Order with id " + orderId + " not found"));
+                // Setup order status DTO
+                orderStatusDto = ApiOrderStatusDto.builder().status("delivered").build();
+        }
 
-//         Exception exception = assertThrows(ResourceNotFoundException.class,
-//                 () -> orderApiController.changeOrderStatus(orderId, orderStatusDto));
+        // Test changing the order status successfully
+        @Test
+        @WithMockUser
+        public void testChangeOrderStatus() throws Exception {
+                // Mock the behavior of orderService
+                when(orderService.changeOrderStatus(orderId, orderStatusDto)).thenReturn(orderStatusDto.getStatus());
 
-//         assertEquals("Order with id 1 not found", exception.getMessage());
+                // Perform POST request to change order status and verify the response
+                mockMvc.perform(post(BASE_URL + "/{order_id}/status", orderId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(orderStatusDto)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message").value(SUCCESS_MESSAGE))
+                                .andExpect(jsonPath("$.data.status").value(orderStatusDto.getStatus()));
 
-//         verify(orderService, times(1)).changeOrderStatus(orderId, orderStatusDto);
-//     }
+                // Verify the interaction with orderService
+                verify(orderService, times(1)).changeOrderStatus(orderId, orderStatusDto);
+        }
 
-//     // Test get orders by type and ID
-//     @Test
-//     public void testGetOrdersByTypeAndId_Customer() {
-//         Integer customerId = 1;
-//         String type = "customer";
-//         List<ApiOrderDto> orders = Arrays.asList(
-//                 ApiOrderDto.builder().id(1).customer_id(customerId).status("in progress").build(),
-//                 ApiOrderDto.builder().id(2).customer_id(customerId).status("delivered").build());
+        // Test changing the order status when order is not found
+        @Test
+        @WithMockUser
+        public void testChangeOrderStatus_NotFound() throws Exception {
+                // Mock the behavior of orderService to throw exception
+                when(orderService.changeOrderStatus(orderId, orderStatusDto))
+                                .thenThrow(new ResourceNotFoundException(NOT_FOUND_MESSAGE));
 
-//         when(orderService.getOrdersByTypeAndId(type, customerId)).thenReturn(orders);
+                // Perform POST request to change order status and verify the response
+                mockMvc.perform(post(BASE_URL + "/{order_id}/status", orderId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(orderStatusDto)))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message").value(NOT_FOUND_MESSAGE))
+                                .andExpect(jsonPath("$.data").doesNotExist());
 
-//         ResponseEntity<?> responseEntity = orderApiController.getOrders(type, customerId);
-//         ApiResponseDto responseBody = (ApiResponseDto) responseEntity.getBody();
+                // Verify the interaction with orderService
+                verify(orderService, times(1)).changeOrderStatus(orderId, orderStatusDto);
+        }
 
-//         assertEquals(200, responseEntity.getStatusCodeValue());
-//         assertEquals("Success", responseBody.getMessage());
-//         assertEquals(orders, responseBody.getData());
+        // Test fetching orders by type and ID for customer
+        @Test
+        @WithMockUser
+        public void testGetOrdersByTypeAndId_Customer() throws Exception {
+                // Setup mock orders list
+                List<ApiOrderDto> orders = Arrays.asList(
+                                ApiOrderDto.builder().id(1).customer_id(1).status("in progress").build(),
+                                ApiOrderDto.builder().id(2).customer_id(1).status("delivered").build());
 
-//         verify(orderService, times(1)).getOrdersByTypeAndId(type, customerId);
-//     }
+                // Mock the behavior of orderService
+                when(orderService.getOrdersByTypeAndId("customer", 1)).thenReturn(orders);
 
-//     // Test create order
-//     @Test
-//     public void testCreateOrder() {
-//         ApiOrderRequestDto orderRequestDto = new ApiOrderRequestDto();
-//         orderRequestDto.setCustomer_id(1);
-//         orderRequestDto.setRestaurant_id(1);
-//         orderRequestDto.setProducts(Arrays.asList(
-//                 new ApiProductForOrderApiDto(1, "Product1", 2, 100, 200),
-//                 new ApiProductForOrderApiDto(2, "Product2", 1, 150, 150)));
+                // Perform GET request to fetch orders and verify the response
+                mockMvc.perform(get(BASE_URL)
+                                .param("type", "customer")
+                                .param("id", String.valueOf(1))
+                                .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message").value(SUCCESS_MESSAGE))
+                                .andExpect(jsonPath("$.data", hasSize(orders.size())))
+                                .andExpect(jsonPath("$.data[0].id").value(orders.get(0).getId()))
+                                .andExpect(jsonPath("$.data[0].customer_id").value(orders.get(0).getCustomer_id()))
+                                .andExpect(jsonPath("$.data[0].status").value(orders.get(0).getStatus()))
+                                .andExpect(jsonPath("$.data[1].id").value(orders.get(1).getId()))
+                                .andExpect(jsonPath("$.data[1].customer_id").value(orders.get(1).getCustomer_id()))
+                                .andExpect(jsonPath("$.data[1].status").value(orders.get(1).getStatus()));
 
-//         ApiOrderDto newOrder = ApiOrderDto.builder()
-//                 .id(1)
-//                 .customer_id(1)
-//                 .restaurant_id(1)
-//                 .status("in progress")
-//                 .total_cost(350)
-//                 .build();
+                // Verify the interaction with orderService
+                verify(orderService, times(1)).getOrdersByTypeAndId("customer", 1);
+        }
 
-//         when(orderService.createOrder(orderRequestDto)).thenReturn(newOrder);
+        // Test creating an order successfully
+        @Test
+        @WithMockUser
+        public void testCreateOrder() throws Exception {
+                // Mock the behavior of orderService
+                when(orderService.createOrder(any(ApiOrderRequestDto.class))).thenReturn(newOrder);
 
-//         ResponseEntity<?> responseEntity = orderApiController.createOrder(orderRequestDto);
-//         ApiResponseDto responseBody = (ApiResponseDto) responseEntity.getBody();
+                // Perform POST request to create order and verify the response
+                mockMvc.perform(post(BASE_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(orderRequestDto)))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.message").value(SUCCESS_MESSAGE))
+                                .andExpect(jsonPath("$.data.id").value(newOrder.getId()))
+                                .andExpect(jsonPath("$.data.customer_id").value(newOrder.getCustomer_id()))
+                                .andExpect(jsonPath("$.data.restaurant_id").value(newOrder.getRestaurant_id()))
+                                .andExpect(jsonPath("$.data.status").value(newOrder.getStatus()))
+                                .andExpect(jsonPath("$.data.total_cost").value(newOrder.getTotal_cost()));
 
-//         assertEquals(200, responseEntity.getStatusCodeValue());
-//         assertEquals("Success", responseBody.getMessage());
-//         assertEquals(newOrder, responseBody.getData());
+                // Verify the interaction with orderService
+                verify(orderService, times(1)).createOrder(any(ApiOrderRequestDto.class));
+        }
 
-//         verify(orderService, times(1)).createOrder(orderRequestDto);
-//     }
+        // Test creating an order when customer is not found
+        @Test
+        @WithMockUser
+        public void testCreateOrder_Exception() throws Exception {
+                // Mock the behavior of orderService to throw exception
+                when(orderService.createOrder(any(ApiOrderRequestDto.class)))
+                                .thenThrow(new ResourceNotFoundException("Customer not found"));
 
-//     @Test
-//     public void testCreateOrder_Exception() {
-//         ApiOrderRequestDto orderRequestDto = new ApiOrderRequestDto();
-//         orderRequestDto.setCustomer_id(1);
-//         orderRequestDto.setRestaurant_id(1);
-//         orderRequestDto.setProducts(Arrays.asList(
-//                 new ApiProductForOrderApiDto(1, "Product1", 2, 100, 200),
-//                 new ApiProductForOrderApiDto(2, "Product2", 1, 150, 150)));
+                // Perform POST request to create order and verify the response
+                mockMvc.perform(post(BASE_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(orderRequestDto)))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message").value("Customer not found"))
+                                .andExpect(jsonPath("$.data").doesNotExist());
 
-//         when(orderService.createOrder(orderRequestDto)).thenThrow(new RuntimeException("Internal server error"));
-
-//         ResponseEntity<?> responseEntity = orderApiController.createOrder(orderRequestDto);
-//         ApiResponseDto responseBody = (ApiResponseDto) responseEntity.getBody();
-
-//         assertEquals(500, responseEntity.getStatusCodeValue());
-//         assertEquals("Internal server error", responseBody.getMessage());
-//         assertEquals(null, responseBody.getData());
-
-//         verify(orderService, times(1)).createOrder(orderRequestDto);
-//     }
-// }
+                // Verify the interaction with orderService
+                verify(orderService, times(1)).createOrder(any(ApiOrderRequestDto.class));
+        }
+}

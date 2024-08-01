@@ -22,6 +22,9 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     @Query(nativeQuery = true, value = "SELECT * FROM products WHERE restaurant_id = :restaurantId")
     List<Product> findProductsByRestaurantId(@Param("restaurantId") int restaurantId);
 
+    Optional<Product> findByIdAndRestaurantId(int id, int restaurantId);
+
+
     @Modifying
     @Transactional
     @Query(nativeQuery = true, value = "DELETE FROM products WHERE restaurant_id = :restaurantId")

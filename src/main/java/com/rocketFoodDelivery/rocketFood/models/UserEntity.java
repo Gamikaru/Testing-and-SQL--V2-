@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,6 +39,11 @@ public class UserEntity implements UserDetails {
 
     private Integer customerId;
     private Integer courierId;
+
+    @ManyToOne
+    @JoinColumn(name = "restaurant_id", nullable = true) // Allow nullable for restaurant_id
+    @JsonManagedReference
+    private Restaurant restaurant;
 
     @JsonIgnore
     @Override
