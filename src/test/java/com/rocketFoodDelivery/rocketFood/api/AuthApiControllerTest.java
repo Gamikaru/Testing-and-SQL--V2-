@@ -17,7 +17,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -98,13 +97,14 @@ public class AuthApiControllerTest {
 
         @Test
         public void testAuthenticateWithUnexpectedError() throws Exception {
+                // Simulate a general runtime exception to test unexpected error handling
                 Mockito.when(authManager.authenticate(Mockito.any(UsernamePasswordAuthenticationToken.class)))
                                 .thenThrow(new RuntimeException("Unexpected error"));
 
                 mockMvc.perform(post(BASE_URI)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(validAuthRequest)))
-                                .andExpect(status().isInternalServerError())
+                                .andExpect(status().isInternalServerError()) // Expect 500 Internal Server Error
                                 .andExpect(jsonPath("$.success").value(false))
                                 .andExpect(jsonPath("$.message").value("Unexpected error occurred"));
         }

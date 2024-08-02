@@ -1,8 +1,5 @@
-// RESTAURANT API CONTROLLER TEST
-
 package com.rocketFoodDelivery.rocketFood.api;
 
-// Import necessary packages and classes
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rocketFoodDelivery.rocketFood.RocketFoodApplication;
 import com.rocketFoodDelivery.rocketFood.dtos.ApiAddressDto;
@@ -30,7 +27,9 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+
 import java.util.List;
+
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -40,7 +39,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(locations = "classpath:application-test.properties")
 public class RestaurantApiControllerTest {
 
-    // Dependency injection and mocking for the required services and objects
     @Autowired
     private MockMvc mockMvc;
 
@@ -50,7 +48,6 @@ public class RestaurantApiControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    // Defining constants for reuse in tests
     private static final String BASE_URI = "/api/restaurants";
     private static final String VALID_PHONE = "123-456-7890";
     private static final String INVALID_PHONE = "invalid-phone";
@@ -67,20 +64,17 @@ public class RestaurantApiControllerTest {
     private static final String ADDRESS_REQUIRED_MESSAGE = "Address is required";
     private static final String INTERNAL_SERVER_ERROR_MESSAGE = "Internal server error";
 
-    // DTOs and entities used in the tests
     private ApiCreateRestaurantDto validRestaurantDto;
     private Address validAddress;
     private UserEntity validUser;
 
     @BeforeEach
     public void setUp() {
-        // Initialize the test data
         validAddress = createValidAddress();
         validUser = createValidUser();
         validRestaurantDto = createValidRestaurantDto();
     }
 
-    // Helper method to create a valid address
     private Address createValidAddress() {
         return Address.builder()
                 .streetAddress(STREET_ADDRESS)
@@ -89,7 +83,6 @@ public class RestaurantApiControllerTest {
                 .build();
     }
 
-    // Helper method to create a valid user
     private UserEntity createValidUser() {
         return UserEntity.builder()
                 .name("Test User")
@@ -98,7 +91,6 @@ public class RestaurantApiControllerTest {
                 .build();
     }
 
-    // Helper method to create a valid restaurant DTO
     private ApiCreateRestaurantDto createValidRestaurantDto() {
         return ApiCreateRestaurantDto.builder()
                 .name(VALID_NAME)
@@ -116,15 +108,11 @@ public class RestaurantApiControllerTest {
 
     @AfterEach
     public void tearDown() {
-        // Cleanup after each test if necessary
     }
-
-    // TEST CASES
 
     @Test
     @WithMockUser
     public void testCreateRestaurantWithValidData() throws Exception {
-        // Mock the service response for creating a restaurant
         ApiRestaurantDto createdRestaurant = ApiRestaurantDto.builder()
                 .id(1)
                 .name(validRestaurantDto.getName())
@@ -141,7 +129,6 @@ public class RestaurantApiControllerTest {
     @Test
     @WithMockUser
     public void testCreateRestaurantWithMissingFields() throws Exception {
-        // Test for missing required fields in the request
         ApiCreateRestaurantDto incompleteRestaurantDto = ApiCreateRestaurantDto.builder()
                 .name(VALID_NAME)
                 .phone(VALID_PHONE)
@@ -153,7 +140,6 @@ public class RestaurantApiControllerTest {
     @Test
     @WithMockUser
     public void testCreateRestaurantWithInvalidData() throws Exception {
-        // Test for invalid data in the request
         ApiCreateRestaurantDto invalidRestaurantDto = ApiCreateRestaurantDto.builder()
                 .name("")
                 .phone(INVALID_PHONE)
@@ -168,7 +154,6 @@ public class RestaurantApiControllerTest {
     @Test
     @WithMockUser
     public void testFetchRestaurantsWithoutFilters() throws Exception {
-        // Test fetching restaurants without any filters
         ApiRestaurantDto restaurantDto = ApiRestaurantDto.builder()
                 .id(1)
                 .name(validRestaurantDto.getName())
@@ -184,14 +169,12 @@ public class RestaurantApiControllerTest {
     @Test
     @WithMockUser
     public void testFetchRestaurantsWithRatingFilter() throws Exception {
-        // Test fetching restaurants with rating filter
         performGetRequest("5", null, 200, SUCCESS_MESSAGE, List.of());
     }
 
     @Test
     @WithMockUser
     public void testFetchRestaurantsWithPriceRangeFilter() throws Exception {
-        // Test fetching restaurants with price range filter
         ApiRestaurantDto restaurantDto = ApiRestaurantDto.builder()
                 .id(1)
                 .name(validRestaurantDto.getName())
@@ -207,14 +190,12 @@ public class RestaurantApiControllerTest {
     @Test
     @WithMockUser
     public void testFetchRestaurantsWithRatingAndPriceRangeFilters() throws Exception {
-        // Test fetching restaurants with both rating and price range filters
         performGetRequest("5", "2", 200, SUCCESS_MESSAGE, List.of());
     }
 
     @Test
     @WithMockUser
     public void testFetchRestaurantByValidId() throws Exception {
-        // Test fetching a restaurant by a valid ID
         ApiRestaurantDto restaurantDto = ApiRestaurantDto.builder()
                 .id(1)
                 .name(validRestaurantDto.getName())
@@ -230,7 +211,6 @@ public class RestaurantApiControllerTest {
     @Test
     @WithMockUser
     public void testFetchRestaurantByInvalidId() throws Exception {
-        // Test fetching a restaurant by an invalid ID
         Mockito.when(restaurantService.getRestaurantById(999))
                 .thenThrow(new ResourceNotFoundException(NOT_FOUND_MESSAGE));
 
@@ -240,7 +220,6 @@ public class RestaurantApiControllerTest {
     @Test
     @WithMockUser
     public void testUpdateRestaurantWithValidData() throws Exception {
-        // Test updating a restaurant with valid data
         ApiCreateRestaurantDto updatedRestaurantDto = ApiCreateRestaurantDto.builder()
                 .name(UPDATED_NAME)
                 .phone("098-765-4321")
@@ -270,7 +249,6 @@ public class RestaurantApiControllerTest {
     @Test
     @WithMockUser
     public void testUpdateRestaurantWithMissingFields() throws Exception {
-        // Test updating a restaurant with missing required fields
         ApiCreateRestaurantDto incompleteRestaurantDto = ApiCreateRestaurantDto.builder()
                 .name(UPDATED_NAME)
                 .build();
@@ -281,7 +259,6 @@ public class RestaurantApiControllerTest {
     @Test
     @WithMockUser
     public void testUpdateRestaurantWithInvalidData() throws Exception {
-        // Test updating a restaurant with invalid data
         ApiCreateRestaurantDto invalidRestaurantDto = ApiCreateRestaurantDto.builder()
                 .name("")
                 .phone(INVALID_PHONE)
@@ -296,7 +273,6 @@ public class RestaurantApiControllerTest {
     @Test
     @WithMockUser
     public void testUpdateRestaurantWithNonExistingId() throws Exception {
-        // Test updating a restaurant with a non-existing ID
         ApiCreateRestaurantDto updatedRestaurantDto = ApiCreateRestaurantDto.builder()
                 .name(UPDATED_NAME)
                 .phone("098-765-4321")
@@ -319,7 +295,6 @@ public class RestaurantApiControllerTest {
     @Test
     @WithMockUser
     public void testDeleteRestaurantWithValidId() throws Exception {
-        // Test deleting a restaurant with a valid ID
         ApiRestaurantDto deletedRestaurant = ApiRestaurantDto.builder()
                 .id(1)
                 .name(VALID_NAME)
@@ -335,14 +310,11 @@ public class RestaurantApiControllerTest {
     @Test
     @WithMockUser
     public void testDeleteRestaurantWithInvalidId() throws Exception {
-        // Test deleting a restaurant with an invalid ID
         Mockito.doThrow(new ResourceNotFoundException(NOT_FOUND_MESSAGE))
                 .when(restaurantService).deleteRestaurant(999);
 
         performDeleteRequest(999, 404, NOT_FOUND_MESSAGE, null);
     }
-
-    // HELPER METHODS FOR PERFORMING HTTP REQUESTS
 
     private void performPostRequest(ApiCreateRestaurantDto restaurantDto, int expectedStatus, String expectedMessage,
             ApiRestaurantDto expectedData) throws Exception {
@@ -439,8 +411,6 @@ public class RestaurantApiControllerTest {
         }
     }
 
-    // TEST SECURITY CONFIGURATION
-
     @Configuration
     @EnableWebSecurity
     public static class TestSecurityConfig {
@@ -448,7 +418,6 @@ public class RestaurantApiControllerTest {
         @Primary
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-            // Disable CSRF and allow all requests for testing purposes
             http.csrf().disable()
                     .authorizeRequests().anyRequest().permitAll();
             return http.build();

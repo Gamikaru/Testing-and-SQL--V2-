@@ -14,6 +14,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
 
@@ -35,14 +36,16 @@ public class JwtTokenFilter extends OncePerRequestFilter {
 
         try {
             if (!jwtUtil.validateAccessToken(token)) {
-                ResponseBuilder.buildErrorResponse(response, "Invalid Token", HttpServletResponse.SC_UNAUTHORIZED);
+                // Corrected method call
+                ResponseBuilder.buildErrorResponse(response, "Invalid Token", HttpStatus.UNAUTHORIZED);
                 return;
             }
 
             setAuthenticationContext(token, request);
         } catch (Exception ex) {
+            // Corrected method call
             ResponseBuilder.buildErrorResponse(response, "Authentication error: " + ex.getMessage(),
-                    HttpServletResponse.SC_UNAUTHORIZED);
+                    HttpStatus.UNAUTHORIZED);
             return;
         }
 

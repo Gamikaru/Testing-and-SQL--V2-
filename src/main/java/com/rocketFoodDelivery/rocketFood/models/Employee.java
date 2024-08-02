@@ -8,8 +8,9 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-
-
+/**
+ * Represents an employee entity.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,22 +18,23 @@ import org.hibernate.annotations.OnDeleteAction;
 @Entity
 @Table(name = "employees")
 public class Employee {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private int id; // Primary key for the employee
 
     @OneToOne(cascade = CascadeType.REMOVE)
     @JoinColumn(name = "user_id", unique = true, nullable = false)
-    private UserEntity userEntity;
+    private UserEntity userEntity; // User associated with the employee
 
     @OneToOne(cascade = CascadeType.REMOVE)
     @JoinColumn(name = "address_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE) // Ensure cascading delete
-    private Address address;
+    private Address address; // Address of the employee
 
     @Column(nullable = false)
-    private String email;
+    private String email; // Email of the employee
 
     @Column(nullable = false)
-    private String phone;
+    private String phone; // Phone number of the employee
 }
