@@ -41,7 +41,7 @@ public class ProductApiControllerTest {
     private static final Integer VALID_RESTAURANT_ID = 1;
     private static final Integer INVALID_RESTAURANT_ID = -1;
     private static final String SUCCESS_MESSAGE = "Success";
-    private static final String RESOURCE_NOT_FOUND_MESSAGE = "Resource not found";
+    private static final String RESOURCE_NOT_FOUND_MESSAGE = "No products found for restaurant ID ";
     private static final String INTERNAL_SERVER_ERROR_MESSAGE = "Internal server error";
 
     private ApiProductDto productDto;
@@ -65,7 +65,7 @@ public class ProductApiControllerTest {
     public void testGetProducts_NoProductsFound() throws Exception {
         Mockito.when(productService.getProductsByRestaurantId(VALID_RESTAURANT_ID)).thenReturn(Collections.emptyList());
 
-        performGetRequest(VALID_RESTAURANT_ID, 404, RESOURCE_NOT_FOUND_MESSAGE, null);
+        performGetRequest(VALID_RESTAURANT_ID, 404, RESOURCE_NOT_FOUND_MESSAGE + VALID_RESTAURANT_ID, null);
     }
 
     @Test
@@ -83,7 +83,7 @@ public class ProductApiControllerTest {
         Mockito.when(productService.getProductsByRestaurantId(INVALID_RESTAURANT_ID))
                 .thenReturn(Collections.emptyList());
 
-        performGetRequest(INVALID_RESTAURANT_ID, 404, RESOURCE_NOT_FOUND_MESSAGE, null);
+        performGetRequest(INVALID_RESTAURANT_ID, 404, RESOURCE_NOT_FOUND_MESSAGE + INVALID_RESTAURANT_ID, null);
     }
 
     private void performGetRequest(Integer restaurantId, int expectedStatus, String expectedMessage,

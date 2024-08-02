@@ -9,6 +9,10 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 
+/**
+ * Utility class for handling JWT operations.
+ * This includes generating, validating, and parsing JWT tokens.
+ */
 @Component
 public class JwtUtil {
 
@@ -17,6 +21,9 @@ public class JwtUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JwtUtil.class);
 
+    /**
+     * Validates that the secret key is not null or empty.
+     */
     @PostConstruct
     public void validateSecret() {
         if (secret == null || secret.isEmpty()) {
@@ -24,6 +31,12 @@ public class JwtUtil {
         }
     }
 
+    /**
+     * Generates an access token for the user.
+     * 
+     * @param user the UserEntity
+     * @return the generated JWT token
+     */
     public String generateAccessToken(UserEntity user) {
         return Jwts.builder()
                 .setSubject(String.format("%s,%s", user.getId(), user.getEmail()))
@@ -31,6 +44,12 @@ public class JwtUtil {
                 .compact();
     }
 
+    /**
+     * Validates the access token.
+     * 
+     * @param token the JWT token
+     * @return true if the token is valid, false otherwise
+     */
     public boolean validateAccessToken(String token) {
         try {
             Jwts.parser().setSigningKey(secret).parseClaimsJws(token);
@@ -49,10 +68,22 @@ public class JwtUtil {
         return false;
     }
 
+    /**
+     * Extracts the subject (user information) from the token.
+     * 
+     * @param token the JWT token
+     * @return the subject
+     */
     public String getSubject(String token) {
         return parseClaims(token).getSubject();
     }
 
+    /**
+     * Parses the claims from the token.
+     * 
+     * @param token the JWT token
+     * @return the claims
+     */
     private Claims parseClaims(String token) {
         return Jwts.parser()
                 .setSigningKey(secret)
