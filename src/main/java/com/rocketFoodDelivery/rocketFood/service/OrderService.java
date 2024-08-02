@@ -21,6 +21,9 @@ public class OrderService {
         private final RestaurantRepository restaurantRepository;
         private final CustomerRepository customerRepository;
 
+        /**
+         * Constructor for dependency injection.
+         */
         public OrderService(OrderRepository orderRepository, OrderStatusRepository orderStatusRepository,
                         ProductOrderRepository productOrderRepository, ProductRepository productRepository,
                         RestaurantRepository restaurantRepository, CustomerRepository customerRepository) {
@@ -32,6 +35,13 @@ public class OrderService {
                 this.customerRepository = customerRepository;
         }
 
+        /**
+         * Changes the status of an order.
+         *
+         * @param orderId        The ID of the order.
+         * @param orderStatusDto The new status of the order.
+         * @return The updated order status.
+         */
         public String changeOrderStatus(Integer orderId, ApiOrderStatusDto orderStatusDto) {
                 log.info("Fetching order by ID: {}", orderId);
 
@@ -51,6 +61,13 @@ public class OrderService {
                 return order.getOrder_status().getName();
         }
 
+        /**
+         * Retrieves orders based on type and ID.
+         *
+         * @param type The type of entity (customer, restaurant, courier).
+         * @param id   The ID of the entity.
+         * @return A list of orders.
+         */
         public List<ApiOrderDto> getOrdersByTypeAndId(String type, Integer id) {
                 log.info("Fetching orders by type: {} and ID: {}", type, id);
                 List<Order> orders;
@@ -75,6 +92,12 @@ public class OrderService {
                 return orders.stream().map(this::mapToApiOrderDto).collect(Collectors.toList());
         }
 
+        /**
+         * Creates a new order.
+         *
+         * @param orderRequestDto The order request data transfer object.
+         * @return The created order data transfer object.
+         */
         public ApiOrderDto createOrder(ApiOrderRequestDto orderRequestDto) {
                 log.info("Creating order for customer ID: {}, restaurant ID: {}", orderRequestDto.getCustomer_id(),
                                 orderRequestDto.getRestaurant_id());
@@ -92,10 +115,12 @@ public class OrderService {
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Customer with id " + orderRequestDto.getCustomer_id() + " not found"));
 
+                // Log product details
                 orderRequestDto.getProducts().forEach(
                                 product -> log.info("Product ID: {}, Quantity: {}", product.getId(),
                                                 product.getQuantity()));
 
+                // Create and save the order
                 Order order = new Order();
                 order.setCustomer(customer); // Set the full Customer object
                 order.setRestaurant(restaurant); // Set the full Restaurant object
@@ -141,6 +166,12 @@ public class OrderService {
                 return mapToApiOrderDto(finalOrder); // Ensure this method correctly converts Order to ApiOrderDto
         }
 
+        /**
+         * Maps an Order entity to an ApiOrderDto.
+         *
+         * @param order The order entity.
+         * @return The API order data transfer object.
+         */
         private ApiOrderDto mapToApiOrderDto(Order order) {
                 List<ApiProductForOrderApiDto> products = productOrderRepository.findByOrderId(order.getId()).stream()
                                 .map(productOrder -> new ApiProductForOrderApiDto(

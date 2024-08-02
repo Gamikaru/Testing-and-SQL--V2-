@@ -4,9 +4,12 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.Builder;
 
+/**
+ * Data Transfer Object for restaurant rating.
+ */
 @Getter
 @Setter
 @Builder
 public class ApiRestaurantRatingDto {
-    int restaurant_rating;
+    private int restaurantRating; // The rating of the restaurant
 }

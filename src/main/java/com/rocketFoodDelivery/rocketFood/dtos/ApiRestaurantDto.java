@@ -7,21 +7,23 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-
+/**
+ * Data Transfer Object for restaurant details.
+ */
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class ApiRestaurantDto {
-    int id;
-    String name;
+    private int id; // The unique identifier of the restaurant
+    private String name; // The name of the restaurant
 
     @JsonProperty("price_range")
-    int priceRange;
+    private int priceRange; // The price range of the restaurant
 
-    int rating;
+    private int rating; // The rating of the restaurant
 
     @JsonProperty("address")
-    ApiAddressDto address;
+    private ApiAddressDto address; // The address details of the restaurant
 }

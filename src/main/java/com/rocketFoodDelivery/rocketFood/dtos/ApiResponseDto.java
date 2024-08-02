@@ -8,6 +8,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Data transfer object for API responses.
+ */
 @Getter
 @Setter
 @Builder
@@ -17,12 +20,14 @@ public class ApiResponseDto {
     private String message;
     private Object data;
 
-    @Override
-    public String toString() {
-        try {
-            return new ObjectMapper().writeValueAsString(this);
-        } catch (JsonProcessingException e) {
-            return "{\"message\":\"" + message + "\", \"data\":\"" + data + "\"}";
-        }
+    /**
+     * Converts the ApiResponseDto to a JSON string.
+     *
+     * @return the JSON representation of the ApiResponseDto.
+     * @throws JsonProcessingException if the object cannot be converted to JSON.
+     */
+    public String toJson() throws JsonProcessingException {
+        return new ObjectMapper().writeValueAsString(this);
     }
+
 }

@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Represents a product entity.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -13,31 +16,41 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "products")
 public class Product {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private int id; // Primary key for the product
 
     @ManyToOne
     @JoinColumn(name = "restaurant_id", nullable = false)
-    private Restaurant restaurant;
+    private Restaurant restaurant; // Restaurant associated with the product
 
     @Column(nullable = false)
-    private String name;
+    private String name; // Name of the product
 
     @Column(nullable = false)
-    private String description;
+    private String description; // Description of the product
 
     @Column(nullable = false)
-    private Integer unitCost;
+    private Integer unitCost; // Cost per unit of the product
 
+    /**
+     * Constructor to create a product with a given ID.
+     */
     public Product(int id) {
         this.id = id;
     }
 
+    /**
+     * Returns the cost of the product.
+     */
     public Integer getCost() {
         return unitCost;
     }
 
+    /**
+     * Product builder class.
+     */
     public static class ProductBuilder {
         private int id;
         private Restaurant restaurant;
@@ -49,8 +62,6 @@ public class Product {
             this.unitCost = unitCost;
             return this;
         }
-
-        // Other builder methods...
 
         public Product build() {
             return new Product(id, restaurant, name, description, unitCost);

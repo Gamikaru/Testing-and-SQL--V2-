@@ -2,6 +2,7 @@ package com.rocketFoodDelivery.rocketFood.controller.api;
 
 import com.rocketFoodDelivery.rocketFood.service.AuthService;
 import com.rocketFoodDelivery.rocketFood.dtos.AuthRequestDto;
+import com.rocketFoodDelivery.rocketFood.dtos.AuthResponseSuccessDto;
 import com.rocketFoodDelivery.rocketFood.util.ResponseBuilder;
 import com.rocketFoodDelivery.rocketFood.models.UserEntity;
 import com.rocketFoodDelivery.rocketFood.security.JwtUtil;
@@ -55,14 +56,18 @@ public class AuthController {
             String accessToken = jwtUtil.generateAccessToken(user);
 
             log.info("Authentication successful for user: {}", user.getEmail());
-            return ResponseBuilder.buildAuthSuccessResponse(accessToken); // Return 200 OK with the token
+            AuthResponseSuccessDto response = AuthResponseSuccessDto.builder()
+                    .success(true)
+                    .accessToken(accessToken)
+                    .build();
+            return ResponseEntity.ok(response); // Return 200 OK with the token
         } catch (BadCredentialsException | UsernameNotFoundException e) {
             log.error("Authentication failed for user: {}", request.getEmail());
-            return ResponseBuilder.buildAuthErrorResponse("Invalid email or password", HttpStatus.UNAUTHORIZED.value());
+            return ResponseBuilder.buildAuthErrorResponse("Invalid email or password", HttpStatus.UNAUTHORIZED);
         } catch (Exception e) {
             log.error("Unexpected error during authentication for user: {}", request.getEmail(), e);
             return ResponseBuilder.buildAuthErrorResponse("Unexpected error occurred",
-                    HttpStatus.INTERNAL_SERVER_ERROR.value());
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

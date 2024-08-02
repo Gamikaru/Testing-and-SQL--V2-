@@ -7,6 +7,7 @@ import com.rocketFoodDelivery.rocketFood.util.ResponseBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 
@@ -31,10 +32,12 @@ public class ProductApiController {
                 return ResponseBuilder.buildNotFoundResponse("Resource not found");
             }
             log.info("Fetched products: {}", products);
-            return ResponseBuilder.buildResponse("Success", products, 200);
+            // Changed to use HttpStatus instead of integer
+            return ResponseBuilder.buildResponse("Success", products, HttpStatus.OK);
         } catch (Exception ex) {
             log.error("Exception occurred while fetching products: {}", ex.getMessage());
-            return ResponseBuilder.buildErrorResponse("Internal server error", 500);
+            // Changed to use HttpStatus instead of integer
+            return ResponseBuilder.buildErrorResponse("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

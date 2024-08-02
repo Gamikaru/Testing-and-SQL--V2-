@@ -12,6 +12,9 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import java.util.List;
 
+/**
+ * Represents a restaurant entity.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,47 +22,54 @@ import java.util.List;
 @Entity
 @Table(name = "restaurants")
 public class Restaurant {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private int id; // Primary key for the restaurant
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false) // Ensure user_id is not nullable
-    private UserEntity userEntity;
+    private UserEntity userEntity; // User associated with the restaurant
 
     @ManyToOne(cascade = CascadeType.REMOVE)
     @JoinColumn(name = "address_id", unique = true, nullable = false) // Ensure address_id is unique and not nullable
-    private Address address;
+    private Address address; // Address of the restaurant
 
     @Column(nullable = false)
-    private String name;
+    private String name; // Name of the restaurant
 
     @Column(name = "price_range", nullable = false)
     @Min(1)
     @Max(3)
-    private int priceRange;
+    private int priceRange; // Price range of the restaurant
 
     @Column(nullable = false)
-    private String phone;
+    private String phone; // Phone number of the restaurant
 
     @Column(nullable = false)
-    private String email;
+    private String email; // Email of the restaurant
 
     @Column(nullable = false)
-    private boolean active; // Add active field to match schema
+    private boolean active; // Whether the restaurant is active or not
 
     @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    private List<Product> products;
+    private List<Product> products; // Products associated with the restaurant
 
     @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonBackReference
-    private List<Order> orders;
+    private List<Order> orders; // Orders associated with the restaurant
 
+    /**
+     * Constructor to create a restaurant with a given ID.
+     */
     public Restaurant(int id) {
         this.id = id;
     }
 
+    /**
+     * Returns the list of orders associated with the restaurant.
+     */
     @JsonBackReference
     public List<Order> getOrders() {
         return orders;

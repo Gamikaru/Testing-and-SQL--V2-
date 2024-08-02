@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 
@@ -35,13 +36,16 @@ public class RestaurantApiController {
             log.info("Validating restaurant data: {}", restaurantDto);
             ApiRestaurantDto savedRestaurant = restaurantService.createRestaurant(restaurantDto);
             log.info("Restaurant created successfully: {}", savedRestaurant);
-            return ResponseBuilder.buildResponse("Success", savedRestaurant, 201);
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildResponse("Success", savedRestaurant, HttpStatus.CREATED);
         } catch (ValidationException ex) {
             log.error("Validation error: {}", ex.getMessage());
             return ResponseBuilder.buildBadRequestResponse("Invalid or missing parameters");
         } catch (Exception ex) {
             log.error("Exception occurred while saving restaurant: {}", ex.getMessage(), ex);
-            return ResponseBuilder.buildErrorResponse("Internal server error: " + ex.getMessage(), 500);
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildErrorResponse("Internal server error: " + ex.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -59,10 +63,12 @@ public class RestaurantApiController {
         try {
             List<ApiRestaurantDto> restaurants = restaurantService.getRestaurants(rating, priceRange);
             log.info("Fetched restaurants: {}", restaurants);
-            return ResponseBuilder.buildResponse("Success", restaurants, 200);
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildResponse("Success", restaurants, HttpStatus.OK);
         } catch (Exception ex) {
             log.error("Exception occurred while fetching restaurants: {}", ex.getMessage());
-            return ResponseBuilder.buildErrorResponse("Internal server error", 500);
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildErrorResponse("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -74,13 +80,15 @@ public class RestaurantApiController {
             log.info("Calling service to fetch restaurant by ID.");
             ApiRestaurantDto restaurant = restaurantService.getRestaurantById(id);
             log.info("Restaurant details: {}", restaurant);
-            return ResponseBuilder.buildResponse("Success", restaurant, 200);
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildResponse("Success", restaurant, HttpStatus.OK);
         } catch (ResourceNotFoundException ex) {
             log.error("Restaurant not found with ID: {}", id);
             return ResponseBuilder.buildNotFoundResponse("Restaurant with id " + id + " not found");
         } catch (Exception ex) {
             log.error("Exception occurred while fetching restaurant: {}", ex.getMessage());
-            return ResponseBuilder.buildErrorResponse("Internal server error", 500);
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildErrorResponse("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -93,7 +101,8 @@ public class RestaurantApiController {
             log.info("Validating updated restaurant data: {}", restaurantDto);
             ApiRestaurantDto updatedRestaurant = restaurantService.updateRestaurant(id, restaurantDto);
             log.info("Restaurant updated successfully: {}", updatedRestaurant);
-            return ResponseBuilder.buildResponse("Success", updatedRestaurant, 200);
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildResponse("Success", updatedRestaurant, HttpStatus.OK);
         } catch (ValidationException ex) {
             log.error("Validation error: {}", ex.getMessage());
             return ResponseBuilder.buildBadRequestResponse("Validation failed: " + ex.getMessage());
@@ -102,7 +111,8 @@ public class RestaurantApiController {
             return ResponseBuilder.buildNotFoundResponse("Restaurant with id " + id + " not found");
         } catch (Exception ex) {
             log.error("Exception occurred while updating restaurant: {}", ex.getMessage());
-            return ResponseBuilder.buildErrorResponse("Internal server error", 500);
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildErrorResponse("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -114,13 +124,15 @@ public class RestaurantApiController {
             log.info("Calling service to delete restaurant.");
             ApiRestaurantDto deletedRestaurant = restaurantService.deleteRestaurant(id);
             log.info("Restaurant deleted successfully: {}", id);
-            return ResponseBuilder.buildResponse("Success", deletedRestaurant, 200);
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildResponse("Success", deletedRestaurant, HttpStatus.OK);
         } catch (ResourceNotFoundException ex) {
             log.error("Restaurant not found with ID: {}", id);
             return ResponseBuilder.buildNotFoundResponse("Restaurant with id " + id + " not found");
         } catch (Exception ex) {
             log.error("Exception occurred while deleting restaurant: {}", ex.getMessage());
-            return ResponseBuilder.buildErrorResponse("Internal server error", 500);
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildErrorResponse("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

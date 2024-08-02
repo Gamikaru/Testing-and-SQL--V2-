@@ -1,12 +1,15 @@
 package com.rocketFoodDelivery.rocketFood.exception;
 
-import lombok.Getter;
-
+/**
+ * Exception thrown when validation fails.
+ */
 public class ValidationException extends RuntimeException {
-    @Getter
-    private final String message;
-
+    /**
+     * Constructs a new ValidationException with the specified detail message.
+     *
+     * @param message the detail message.
+     */
     public ValidationException(String message) {
-        this.message = message;
+        super(message);
     }
 }
