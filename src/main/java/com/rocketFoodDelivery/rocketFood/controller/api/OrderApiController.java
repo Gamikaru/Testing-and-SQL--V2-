@@ -14,6 +14,9 @@ import org.springframework.http.HttpStatus;
 
 import java.util.List;
 
+/**
+ * Controller for managing orders in the system.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/orders")
@@ -21,19 +24,25 @@ public class OrderApiController {
 
     private final OrderService orderService;
 
+    /**
+     * Constructs an instance of OrderApiController with the given OrderService.
+     *
+     * @param orderService The OrderService used for managing orders.
+     */
     public OrderApiController(OrderService orderService) {
         this.orderService = orderService;
     }
 
     /**
-     * Change the status of an order.
-     * 
-     * @param orderId        The ID of the order to change.
-     * @param orderStatusDto The new status of the order.
-     * @return ResponseEntity with the result of the operation.
+     * Changes the status of a specific order.
+     *
+     * @param orderId        The ID of the order to update.
+     * @param orderStatusDto The new status details for the order.
+     * @return ResponseEntity with the result of the status update operation.
      */
     @PostMapping("/{order_id}/status")
-    public ResponseEntity<?> changeOrderStatus(@PathVariable("order_id") Integer orderId,
+    public ResponseEntity<?> changeOrderStatus(
+            @PathVariable("order_id") Integer orderId,
             @RequestBody ApiOrderStatusDto orderStatusDto) {
         log.info("Changing status of order ID: {} to {}", orderId, orderStatusDto.getStatus());
 
@@ -44,7 +53,6 @@ public class OrderApiController {
             log.info("Order status changed successfully: {}", newStatus);
 
             ApiOrderStatusDto responseDto = ApiOrderStatusDto.builder().status(newStatus).build();
-            // Changed to use HttpStatus instead of integer
             return ResponseBuilder.buildResponse("Success", responseDto, HttpStatus.OK);
         } catch (ResourceNotFoundException ex) {
             log.error("Order not found with ID: {}", orderId);
@@ -54,42 +62,41 @@ public class OrderApiController {
             return ResponseBuilder.buildBadRequestResponse("Invalid or missing parameters");
         } catch (Exception ex) {
             log.error("Exception occurred while changing order status: {}", ex.getMessage(), ex);
-            // Changed to use HttpStatus instead of integer
             return ResponseBuilder.buildErrorResponse("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     /**
-     * Fetch orders based on type and ID.
-     * 
-     * @param type The type of orders to fetch.
+     * Retrieves a list of orders based on type and ID.
+     *
+     * @param type The type of orders to retrieve.
      * @param id   The ID associated with the type.
-     * @return ResponseEntity with the list of orders.
+     * @return ResponseEntity containing the list of orders.
      */
     @GetMapping
-    public ResponseEntity<?> getOrders(@RequestParam String type, @RequestParam Integer id) {
+    public ResponseEntity<?> getOrders(
+            @RequestParam String type,
+            @RequestParam Integer id) {
         log.info("Fetching orders for type: {} with ID: {}", type, id);
 
         try {
             List<ApiOrderDto> orders = orderService.getOrdersByTypeAndId(type, id);
             log.info("Fetched orders: {}", orders);
-            // Changed to use HttpStatus instead of integer
             return ResponseBuilder.buildResponse("Success", orders, HttpStatus.OK);
         } catch (IllegalArgumentException ex) {
             log.error("Invalid type provided: {}", ex.getMessage(), ex);
             return ResponseBuilder.buildBadRequestResponse("Invalid or missing parameters");
         } catch (Exception ex) {
             log.error("Exception occurred while fetching orders: {}", ex.getMessage(), ex);
-            // Changed to use HttpStatus instead of integer
             return ResponseBuilder.buildErrorResponse("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     /**
-     * Create a new order.
-     * 
-     * @param orderRequestDto The order details.
-     * @return ResponseEntity with the created order details.
+     * Creates a new order with the given details.
+     *
+     * @param orderRequestDto The details of the order to create.
+     * @return ResponseEntity with the details of the created order.
      */
     @PostMapping
     public ResponseEntity<?> createOrder(@RequestBody ApiOrderRequestDto orderRequestDto) {
@@ -98,23 +105,21 @@ public class OrderApiController {
         try {
             ApiOrderDto orderDto = orderService.createOrder(orderRequestDto);
             log.debug("Order created: {}", orderDto);
-            // Changed to use HttpStatus instead of integer
             return ResponseBuilder.buildResponse("Success", orderDto, HttpStatus.CREATED);
         } catch (ResourceNotFoundException ex) {
             log.error("Resource not found: {}", ex.getMessage());
             return ResponseBuilder.buildNotFoundResponse(ex.getMessage());
         } catch (Exception ex) {
             log.error("Unexpected error: {}", ex.getMessage());
-            // Changed to use HttpStatus instead of integer
             return ResponseBuilder.buildErrorResponse("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     /**
-     * Validate the order status DTO.
-     * 
+     * Validates the given order status DTO.
+     *
      * @param orderStatusDto The order status DTO to validate.
-     * @throws IllegalArgumentException if status is invalid.
+     * @throws IllegalArgumentException if the status is invalid or missing.
      */
     private void validateOrderStatus(ApiOrderStatusDto orderStatusDto) {
         if (orderStatusDto.getStatus() == null || orderStatusDto.getStatus().isEmpty()) {
