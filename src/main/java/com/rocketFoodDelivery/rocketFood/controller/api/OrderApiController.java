@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.http.HttpStatus;
+
 import java.util.List;
 
 @Slf4j
@@ -42,7 +44,7 @@ public class OrderApiController {
             log.info("Order status changed successfully: {}", newStatus);
 
             ApiOrderStatusDto responseDto = ApiOrderStatusDto.builder().status(newStatus).build();
-            return buildSuccessResponse("Success", responseDto);
+            return ResponseBuilder.buildResponse("Success", responseDto, HttpStatus.OK.value());
         } catch (ResourceNotFoundException ex) {
             log.error("Order not found with ID: {}", orderId);
             return ResponseBuilder.buildNotFoundResponse("Order with id " + orderId + " not found");
@@ -51,7 +53,8 @@ public class OrderApiController {
             return ResponseBuilder.buildBadRequestResponse("Invalid or missing parameters");
         } catch (Exception ex) {
             log.error("Exception occurred while changing order status: {}", ex.getMessage(), ex);
-            return ResponseBuilder.buildErrorResponse("Internal server error", 500);
+            return ResponseBuilder.buildErrorResponse("Internal server error",
+                    HttpStatus.INTERNAL_SERVER_ERROR.value());
         }
     }
 
@@ -69,13 +72,14 @@ public class OrderApiController {
         try {
             List<ApiOrderDto> orders = orderService.getOrdersByTypeAndId(type, id);
             log.info("Fetched orders: {}", orders);
-            return buildSuccessResponse("Success", orders);
+            return ResponseBuilder.buildResponse("Success", orders, HttpStatus.OK.value());
         } catch (IllegalArgumentException ex) {
             log.error("Invalid type provided: {}", ex.getMessage(), ex);
             return ResponseBuilder.buildBadRequestResponse("Invalid or missing parameters");
         } catch (Exception ex) {
             log.error("Exception occurred while fetching orders: {}", ex.getMessage(), ex);
-            return ResponseBuilder.buildErrorResponse("Internal server error", 500);
+            return ResponseBuilder.buildErrorResponse("Internal server error",
+                    HttpStatus.INTERNAL_SERVER_ERROR.value());
         }
     }
 
@@ -92,13 +96,14 @@ public class OrderApiController {
         try {
             ApiOrderDto orderDto = orderService.createOrder(orderRequestDto);
             log.debug("Order created: {}", orderDto);
-            return ResponseBuilder.buildResponse("Success", orderDto, 201);
+            return ResponseBuilder.buildResponse("Success", orderDto, HttpStatus.CREATED.value());
         } catch (ResourceNotFoundException ex) {
             log.error("Resource not found: {}", ex.getMessage());
             return ResponseBuilder.buildNotFoundResponse(ex.getMessage());
         } catch (Exception ex) {
             log.error("Unexpected error: {}", ex.getMessage());
-            return ResponseBuilder.buildErrorResponse("Internal server error", 500);
+            return ResponseBuilder.buildErrorResponse("Internal server error",
+                    HttpStatus.INTERNAL_SERVER_ERROR.value());
         }
     }
 
@@ -113,18 +118,5 @@ public class OrderApiController {
             log.error("Invalid or missing parameters");
             throw new IllegalArgumentException("Invalid or missing parameters");
         }
-    }
-
-    /**
-     * Build a success response.
-     * 
-     * @param message The success message.
-     * @param data    The response data.
-     * @return ResponseEntity with success message and data.
-     */
-    private ResponseEntity<?> buildSuccessResponse(String message, Object data) {
-        ResponseEntity<?> response = ResponseBuilder.buildResponse(message, data, 200);
-        log.info("Response: {}", response.getBody());
-        return response;
     }
 }

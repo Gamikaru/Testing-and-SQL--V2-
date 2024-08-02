@@ -1,6 +1,6 @@
 package com.rocketFoodDelivery.rocketFood.util;
 
-import com.rocketFoodDelivery.rocketFood.dtos.ApiResponseDto;
+import com.rocketFoodDelivery.rocketFood.dtos.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -56,5 +56,24 @@ public class ResponseBuilder {
         response.setStatus(status);
         response.setContentType("application/json");
         response.getWriter().write(apiResponse.toString());
+    }
+
+    // New methods for Auth responses
+    public static ResponseEntity<AuthResponseSuccessDto> buildAuthSuccessResponse(String accessToken) {
+        AuthResponseSuccessDto response = AuthResponseSuccessDto.builder()
+                .success(true)
+                .accessToken(accessToken)
+                .build();
+        log.info("Building AuthSuccess response: {}", response);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    public static ResponseEntity<AuthResponseErrorDto> buildAuthErrorResponse(String message, int status) {
+        AuthResponseErrorDto response = AuthResponseErrorDto.builder()
+                .success(false)
+                .message(message)
+                .build();
+        log.info("Building AuthError response with status {}: {}", status, response);
+        return ResponseEntity.status(status).body(response);
     }
 }
