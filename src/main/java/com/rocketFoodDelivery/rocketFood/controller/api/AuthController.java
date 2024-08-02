@@ -2,8 +2,7 @@ package com.rocketFoodDelivery.rocketFood.controller.api;
 
 import com.rocketFoodDelivery.rocketFood.service.AuthService;
 import com.rocketFoodDelivery.rocketFood.dtos.AuthRequestDto;
-import com.rocketFoodDelivery.rocketFood.dtos.AuthResponseErrorDto;
-import com.rocketFoodDelivery.rocketFood.dtos.AuthResponseSuccessDto;
+import com.rocketFoodDelivery.rocketFood.util.ResponseBuilder;
 import com.rocketFoodDelivery.rocketFood.models.UserEntity;
 import com.rocketFoodDelivery.rocketFood.security.JwtUtil;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -55,30 +54,15 @@ public class AuthController {
             // Generate JWT token if authentication is successful
             String accessToken = jwtUtil.generateAccessToken(user);
 
-            // Build the success response DTO
-            AuthResponseSuccessDto response = AuthResponseSuccessDto.builder()
-                    .success(true)
-                    .accessToken(accessToken)
-                    .build();
-
             log.info("Authentication successful for user: {}", user.getEmail());
-            return ResponseEntity.ok(response); // Return 200 OK with the token
+            return ResponseBuilder.buildAuthSuccessResponse(accessToken); // Return 200 OK with the token
         } catch (BadCredentialsException | UsernameNotFoundException e) {
             log.error("Authentication failed for user: {}", request.getEmail());
-            // Build the error response DTO
-            AuthResponseErrorDto response = AuthResponseErrorDto.builder()
-                    .success(false)
-                    .message("Invalid email or password")
-                    .build();
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            return ResponseBuilder.buildAuthErrorResponse("Invalid email or password", HttpStatus.UNAUTHORIZED.value());
         } catch (Exception e) {
             log.error("Unexpected error during authentication for user: {}", request.getEmail(), e);
-            // Build the error response DTO
-            AuthResponseErrorDto response = AuthResponseErrorDto.builder()
-                    .success(false)
-                    .message("Unexpected error occurred")
-                    .build();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            return ResponseBuilder.buildAuthErrorResponse("Unexpected error occurred",
+                    HttpStatus.INTERNAL_SERVER_ERROR.value());
         }
     }
 }
