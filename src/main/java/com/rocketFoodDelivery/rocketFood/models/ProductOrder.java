@@ -28,15 +28,15 @@ public class ProductOrder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id; // Primary key for the product order
 
-    @ManyToOne(cascade = CascadeType.REMOVE)
-    @OnDelete(action = OnDeleteAction.CASCADE)
+    @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @JsonBackReference
     private Product product; // Product associated with the order
 
-    @ManyToOne(cascade = CascadeType.REMOVE)
-    @OnDelete(action = OnDeleteAction.CASCADE)
+    @ManyToOne
     @JoinColumn(name = "order_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @JsonBackReference
     private Order order; // Order associated with the product
 

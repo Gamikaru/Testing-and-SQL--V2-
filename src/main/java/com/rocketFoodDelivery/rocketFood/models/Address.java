@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "addresses")
 public class Address {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id; // Primary key for the address

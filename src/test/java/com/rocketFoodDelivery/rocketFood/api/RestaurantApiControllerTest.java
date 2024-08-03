@@ -21,12 +21,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.security.web.SecurityFilterChain;
+
+
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.List;
 
@@ -34,6 +33,9 @@ import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Integration tests for the RestaurantApiController.
+ */
 @SpringBootTest(classes = RocketFoodApplication.class)
 @AutoConfigureMockMvc
 @TestPropertySource(locations = "classpath:application-test.properties")
@@ -68,6 +70,9 @@ public class RestaurantApiControllerTest {
     private Address validAddress;
     private UserEntity validUser;
 
+    /**
+     * Setup method to initialize test data before each test.
+     */
     @BeforeEach
     public void setUp() {
         validAddress = createValidAddress();
@@ -110,6 +115,11 @@ public class RestaurantApiControllerTest {
     public void tearDown() {
     }
 
+    /**
+     * Tests creating a restaurant with valid data.
+     * 
+     * @throws Exception if an error occurs during the test.
+     */
     @Test
     @WithMockUser
     public void testCreateRestaurantWithValidData() throws Exception {
@@ -126,6 +136,11 @@ public class RestaurantApiControllerTest {
         performPostRequest(validRestaurantDto, 201, SUCCESS_MESSAGE, createdRestaurant);
     }
 
+    /**
+     * Tests creating a restaurant with missing fields.
+     * 
+     * @throws Exception if an error occurs during the test.
+     */
     @Test
     @WithMockUser
     public void testCreateRestaurantWithMissingFields() throws Exception {
@@ -137,6 +152,11 @@ public class RestaurantApiControllerTest {
         performPostRequest(incompleteRestaurantDto, 400, ADDRESS_REQUIRED_MESSAGE, null);
     }
 
+    /**
+     * Tests creating a restaurant with invalid data.
+     * 
+     * @throws Exception if an error occurs during the test.
+     */
     @Test
     @WithMockUser
     public void testCreateRestaurantWithInvalidData() throws Exception {
@@ -151,6 +171,11 @@ public class RestaurantApiControllerTest {
         performPostRequest(invalidRestaurantDto, 400, USER_ID_REQUIRED_MESSAGE, null);
     }
 
+    /**
+     * Tests fetching restaurants without filters.
+     * 
+     * @throws Exception if an error occurs during the test.
+     */
     @Test
     @WithMockUser
     public void testFetchRestaurantsWithoutFilters() throws Exception {
@@ -166,12 +191,22 @@ public class RestaurantApiControllerTest {
         performGetRequest(null, null, 200, SUCCESS_MESSAGE, List.of(restaurantDto));
     }
 
+    /**
+     * Tests fetching restaurants with a rating filter.
+     * 
+     * @throws Exception if an error occurs during the test.
+     */
     @Test
     @WithMockUser
     public void testFetchRestaurantsWithRatingFilter() throws Exception {
         performGetRequest("5", null, 200, SUCCESS_MESSAGE, List.of());
     }
 
+    /**
+     * Tests fetching restaurants with a price range filter.
+     * 
+     * @throws Exception if an error occurs during the test.
+     */
     @Test
     @WithMockUser
     public void testFetchRestaurantsWithPriceRangeFilter() throws Exception {
@@ -187,12 +222,22 @@ public class RestaurantApiControllerTest {
         performGetRequest(null, "2", 200, SUCCESS_MESSAGE, List.of(restaurantDto));
     }
 
+    /**
+     * Tests fetching restaurants with rating and price range filters.
+     * 
+     * @throws Exception if an error occurs during the test.
+     */
     @Test
     @WithMockUser
     public void testFetchRestaurantsWithRatingAndPriceRangeFilters() throws Exception {
         performGetRequest("5", "2", 200, SUCCESS_MESSAGE, List.of());
     }
 
+    /**
+     * Tests fetching a restaurant by a valid ID.
+     * 
+     * @throws Exception if an error occurs during the test.
+     */
     @Test
     @WithMockUser
     public void testFetchRestaurantByValidId() throws Exception {
@@ -208,6 +253,11 @@ public class RestaurantApiControllerTest {
         performGetRequestById(1, 200, SUCCESS_MESSAGE, restaurantDto);
     }
 
+    /**
+     * Tests fetching a restaurant by an invalid ID.
+     * 
+     * @throws Exception if an error occurs during the test.
+     */
     @Test
     @WithMockUser
     public void testFetchRestaurantByInvalidId() throws Exception {
@@ -217,6 +267,11 @@ public class RestaurantApiControllerTest {
         performGetRequestById(999, 404, NOT_FOUND_MESSAGE, null);
     }
 
+    /**
+     * Tests updating a restaurant with valid data.
+     * 
+     * @throws Exception if an error occurs during the test.
+     */
     @Test
     @WithMockUser
     public void testUpdateRestaurantWithValidData() throws Exception {
@@ -246,6 +301,11 @@ public class RestaurantApiControllerTest {
         performPutRequest(1, updatedRestaurantDto, 200, SUCCESS_MESSAGE, updatedRestaurant);
     }
 
+    /**
+     * Tests updating a restaurant with missing fields.
+     * 
+     * @throws Exception if an error occurs during the test.
+     */
     @Test
     @WithMockUser
     public void testUpdateRestaurantWithMissingFields() throws Exception {
@@ -256,6 +316,11 @@ public class RestaurantApiControllerTest {
         performPutRequest(1, incompleteRestaurantDto, 400, ADDRESS_REQUIRED_MESSAGE, null);
     }
 
+    /**
+     * Tests updating a restaurant with invalid data.
+     * 
+     * @throws Exception if an error occurs during the test.
+     */
     @Test
     @WithMockUser
     public void testUpdateRestaurantWithInvalidData() throws Exception {
@@ -270,6 +335,11 @@ public class RestaurantApiControllerTest {
         performPutRequest(1, invalidRestaurantDto, 400, USER_ID_REQUIRED_MESSAGE, null);
     }
 
+    /**
+     * Tests updating a restaurant with a non-existing ID.
+     * 
+     * @throws Exception if an error occurs during the test.
+     */
     @Test
     @WithMockUser
     public void testUpdateRestaurantWithNonExistingId() throws Exception {
@@ -292,6 +362,11 @@ public class RestaurantApiControllerTest {
         performPutRequest(999, updatedRestaurantDto, 404, NOT_FOUND_MESSAGE, null);
     }
 
+    /**
+     * Tests deleting a restaurant with a valid ID.
+     * 
+     * @throws Exception if an error occurs during the test.
+     */
     @Test
     @WithMockUser
     public void testDeleteRestaurantWithValidId() throws Exception {
@@ -307,6 +382,11 @@ public class RestaurantApiControllerTest {
         performDeleteRequest(1, 200, SUCCESS_MESSAGE, deletedRestaurant);
     }
 
+    /**
+     * Tests deleting a restaurant with an invalid ID.
+     * 
+     * @throws Exception if an error occurs during the test.
+     */
     @Test
     @WithMockUser
     public void testDeleteRestaurantWithInvalidId() throws Exception {
@@ -316,6 +396,15 @@ public class RestaurantApiControllerTest {
         performDeleteRequest(999, 404, NOT_FOUND_MESSAGE, null);
     }
 
+    /**
+     * Helper method to perform POST request and validate the response.
+     * 
+     * @param restaurantDto   the restaurant DTO for the request body.
+     * @param expectedStatus  the expected HTTP status code.
+     * @param expectedMessage the expected response message.
+     * @param expectedData    the expected data in the response.
+     * @throws Exception if an error occurs during the test.
+     */
     private void performPostRequest(ApiCreateRestaurantDto restaurantDto, int expectedStatus, String expectedMessage,
             ApiRestaurantDto expectedData) throws Exception {
         var resultActions = mockMvc.perform(post(BASE_URI)
@@ -333,6 +422,16 @@ public class RestaurantApiControllerTest {
         }
     }
 
+    /**
+     * Helper method to perform GET request and validate the response.
+     * 
+     * @param rating          the rating filter parameter.
+     * @param priceRange      the price range filter parameter.
+     * @param expectedStatus  the expected HTTP status code.
+     * @param expectedMessage the expected response message.
+     * @param expectedData    the expected data in the response.
+     * @throws Exception if an error occurs during the test.
+     */
     private void performGetRequest(String rating, String priceRange, int expectedStatus, String expectedMessage,
             List<ApiRestaurantDto> expectedData) throws Exception {
         var requestBuilder = get(BASE_URI).contentType(MediaType.APPLICATION_JSON);
@@ -361,6 +460,15 @@ public class RestaurantApiControllerTest {
         }
     }
 
+    /**
+     * Helper method to perform GET request by ID and validate the response.
+     * 
+     * @param id              the restaurant ID.
+     * @param expectedStatus  the expected HTTP status code.
+     * @param expectedMessage the expected response message.
+     * @param expectedData    the expected data in the response.
+     * @throws Exception if an error occurs during the test.
+     */
     private void performGetRequestById(int id, int expectedStatus, String expectedMessage,
             ApiRestaurantDto expectedData) throws Exception {
         var resultActions = mockMvc.perform(get(BASE_URI + "/{id}", id)
@@ -377,6 +485,16 @@ public class RestaurantApiControllerTest {
         }
     }
 
+    /**
+     * Helper method to perform PUT request and validate the response.
+     * 
+     * @param id              the restaurant ID.
+     * @param restaurantDto   the restaurant DTO for the request body.
+     * @param expectedStatus  the expected HTTP status code.
+     * @param expectedMessage the expected response message.
+     * @param expectedData    the expected data in the response.
+     * @throws Exception if an error occurs during the test.
+     */
     private void performPutRequest(int id, ApiCreateRestaurantDto restaurantDto, int expectedStatus,
             String expectedMessage, ApiRestaurantDto expectedData) throws Exception {
         var resultActions = mockMvc.perform(put(BASE_URI + "/{id}", id)
@@ -394,6 +512,15 @@ public class RestaurantApiControllerTest {
         }
     }
 
+    /**
+     * Helper method to perform DELETE request and validate the response.
+     * 
+     * @param id              the restaurant ID.
+     * @param expectedStatus  the expected HTTP status code.
+     * @param expectedMessage the expected response message.
+     * @param expectedData    the expected data in the response.
+     * @throws Exception if an error occurs during the test.
+     */
     private void performDeleteRequest(int id, int expectedStatus, String expectedMessage, ApiRestaurantDto expectedData)
             throws Exception {
         var resultActions = mockMvc.perform(delete(BASE_URI + "/{id}", id)
@@ -410,17 +537,5 @@ public class RestaurantApiControllerTest {
             resultActions.andExpect(jsonPath("$.data").doesNotExist());
         }
     }
-
-    @Configuration
-    @EnableWebSecurity
-    public static class TestSecurityConfig {
-
-        @Primary
-        @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-            http.csrf().disable()
-                    .authorizeRequests().anyRequest().permitAll();
-            return http.build();
-        }
-    }
+    
 }

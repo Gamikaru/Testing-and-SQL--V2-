@@ -27,25 +27,23 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id; // Primary key for the order
 
-    @ManyToOne(cascade = CascadeType.REMOVE)
-    @OnDelete(action = OnDeleteAction.CASCADE)
+    @ManyToOne
     @JoinColumn(name = "restaurant_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @JsonBackReference
     private Restaurant restaurant; // Restaurant associated with the order
 
-    @ManyToOne(cascade = CascadeType.REMOVE)
-    @OnDelete(action = OnDeleteAction.CASCADE)
+    @ManyToOne
     @JoinColumn(name = "customer_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @JsonBackReference
     private Customer customer; // Customer associated with the order
 
-    @ManyToOne(cascade = CascadeType.REMOVE)
-    @OnDelete(action = OnDeleteAction.CASCADE)
+    @ManyToOne
     @JoinColumn(name = "status_id", nullable = false)
     private OrderStatus order_status; // Status of the order
 
-    @ManyToOne(cascade = CascadeType.REMOVE)
-    @OnDelete(action = OnDeleteAction.CASCADE)
+    @ManyToOne
     @JoinColumn(name = "courier_id")
     @JsonManagedReference
     private Courier courier; // Courier associated with the order

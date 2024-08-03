@@ -22,7 +22,7 @@ import java.util.List;
 @Entity
 @Table(name = "customers")
 public class Customer {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id; // Primary key for the customer
@@ -31,9 +31,9 @@ public class Customer {
     @JoinColumn(name = "user_id", unique = true, nullable = false)
     private UserEntity userEntity; // User associated with the customer
 
-    @ManyToOne(cascade = CascadeType.REMOVE)
-    @OnDelete(action = OnDeleteAction.CASCADE)
+    @ManyToOne
     @JoinColumn(name = "address_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Address address; // Address of the customer
 
     @Column(columnDefinition = "boolean default true")
