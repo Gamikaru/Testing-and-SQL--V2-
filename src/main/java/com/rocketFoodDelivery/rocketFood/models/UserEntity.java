@@ -9,12 +9,15 @@ import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-
+/**
+ * Represents a user entity with security details.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,24 +25,41 @@ import java.util.List;
 @Entity
 @Table(name = "users")
 public class UserEntity implements UserDetails {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private int id; // Primary key for the user
 
-    private String name;
+    private String name; // Name of the user
+
     @Column(unique = true)
-    private String email;
-    private String password;
+    private String email; // Email of the user, must be unique
 
-    @Transient // This annotation indicates that this field is not part of the database schema
-    private boolean isEmployee;
+    private String password; // Password of the user
+
+    @Transient
+    private boolean isEmployee; // Transient field to check if the user is an employee
+
+    private Integer customerId; // ID of the customer, if applicable
+    private Integer courierId; // ID of the courier, if applicable
+
+    @ManyToOne
+    @JoinColumn(name = "restaurant_id", nullable = true) // Allow nullable for restaurant_id
+    @JsonManagedReference
+    private Restaurant restaurant; // Restaurant associated with the user
+
+    /**
+     * Returns the authorities granted to the user.
+     */
     @JsonIgnore
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<GrantedAuthority> authorities = new ArrayList<>();
 
-        if (isEmployee()) {
+        if (isEmployee) {
             authorities.add(new SimpleGrantedAuthority("ROLE_EMPLOYEE"));
+        } else {
+            authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
         }
         return authorities;
     }
@@ -68,13 +88,10 @@ public class UserEntity implements UserDetails {
     public boolean isCredentialsNonExpired() {
         return true;
     }
-    
+
     @Override
     public boolean isEnabled() {
         return true;
     }
 
-    public boolean isEmployee() {
-        return isEmployee;
-    }
 }

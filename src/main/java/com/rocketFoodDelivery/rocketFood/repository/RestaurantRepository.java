@@ -1,6 +1,8 @@
 package com.rocketFoodDelivery.rocketFood.repository;
 
 import com.rocketFoodDelivery.rocketFood.models.Restaurant;
+import com.rocketFoodDelivery.rocketFood.models.UserEntity;
+import com.rocketFoodDelivery.rocketFood.models.Address;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -13,73 +15,61 @@ import java.util.Optional;
 
 @Repository
 public interface RestaurantRepository extends JpaRepository<Restaurant, Integer> {
-    Optional<Restaurant> findByUserEntityId(int id);
-    List<Restaurant> findAll();
 
-    /**
-     * Finds a restaurant by its ID along with the calculated average rating rounded up to the ceiling.
-     *
-     * @param restaurantId The ID of the restaurant to retrieve.
-     * @return A list of Object arrays representing the selected columns from the query result.
-     *         Each Object array corresponds to the restaurant's information.
-     *         An empty list is returned if no restaurant is found with the specified ID.
-     */
-    @Query(nativeQuery = true, value =
-        "SELECT r.id, r.name, r.price_range, COALESCE(CEIL(SUM(o.restaurant_rating) / NULLIF(COUNT(o.id), 0)), 0) AS rating " +
-        "FROM restaurants r " +
-        "LEFT JOIN orders o ON r.id = o.restaurant_id " +
-        "WHERE r.id = :restaurantId " +
-        "GROUP BY r.id")
-    List<Object[]> findRestaurantWithAverageRatingById(@Param("restaurantId") int restaurantId);
-    
-    /**
-     * Finds restaurants based on the provided rating and price range.
-     *
-     * Executes a native SQL query that retrieves restaurants with their information, including a calculated
-     * average rating rounded up to the ceiling.
-     *
-     * @param rating     The minimum rounded-up average rating of the restaurants. (Optional)
-     * @param priceRange The price range of the restaurants. (Optional)
-     * @return A list of Object arrays representing the selected columns from the query result.
-     *         Each Object array corresponds to a restaurant's information.
-     *         An empty list is returned if no restaurant is found with the specified ID.
-     */
-    @Query(nativeQuery = true, value =
-        "SELECT * FROM (" +
-        "   SELECT r.id, r.name, r.price_range, COALESCE(CEIL(SUM(o.restaurant_rating) / NULLIF(COUNT(o.id), 0)), 0) AS rating " +
-        "   FROM restaurants r " +
-        "   LEFT JOIN orders o ON r.id = o.restaurant_id " +
-        "   WHERE (:priceRange IS NULL OR r.price_range = :priceRange) " +
-        "   GROUP BY r.id" +
-        ") AS result " +
-        "WHERE (:rating IS NULL OR result.rating = :rating)")
-    List<Object[]> findRestaurantsByRatingAndPriceRange(@Param("rating") Integer rating, @Param("priceRange") Integer priceRange);
+        Optional<Restaurant> findByUserEntityId(int userId);
 
-    // TODO
-    @Modifying
-    @Transactional
-    @Query(nativeQuery = true, value =
-        "TODO Write SQL query here")
-    void saveRestaurant(long userId, long addressId, String name, int priceRange, String phone, String email);
+        @Query(nativeQuery = true, value = "SELECT r.id, r.name, r.price_range, " +
+                        "COALESCE(CEIL(SUM(o.restaurant_rating) / NULLIF(COUNT(o.id), 0)), 0) AS rating, r.address_id "
+                        +
+                        "FROM restaurants r " +
+                        "LEFT JOIN orders o ON r.id = o.restaurant_id " +
+                        "GROUP BY r.id, r.name, r.price_range, r.address_id " +
+                        "HAVING (:priceRange IS NULL OR r.price_range = :priceRange) " +
+                        "AND (:rating IS NULL OR rating = :rating)")
+        List<Object[]> findRestaurantsByRatingAndPriceRange(@Param("rating") Integer rating,
+                        @Param("priceRange") Integer priceRange);
 
-    // TODO
-    @Modifying
-    @Transactional
-    @Query(nativeQuery = true, value =
-            "TODO Write SQL query here")
-    void updateRestaurant(int restaurantId, String name, int priceRange, String phone);
+        @Query(nativeQuery = true, value = "SELECT r.id, r.name, r.price_range, " +
+                        "COALESCE(CEIL(SUM(o.restaurant_rating) / NULLIF(COUNT(o.id), 0)), 0) AS rating, r.address_id "
+                        +
+                        "FROM restaurants r " +
+                        "LEFT JOIN orders o ON r.id = o.restaurant_id " +
+                        "WHERE r.id = :restaurantId " +
+                        "GROUP BY r.id, r.name, r.price_range, r.address_id")
+        List<Object[]> findRestaurantWithAverageRatingById(@Param("restaurantId") int restaurantId);
 
-    // TODO
-    @Query(nativeQuery = true, value = "TODO Write SQL query here")
-    Optional<Restaurant> findRestaurantById(@Param("restaurantId") int restaurantId);
+        @Modifying
+        @Transactional
+        @Query(nativeQuery = true, value = "INSERT INTO restaurants (user_id, address_id, name, price_range, phone, email) "
+                        +
+                        "VALUES (:userId, :addressId, :name, :priceRange, :phone, :email)")
+        void saveRestaurant(@Param("userId") long userId, @Param("addressId") long addressId,
+                        @Param("name") String name, @Param("priceRange") int priceRange,
+                        @Param("phone") String phone, @Param("email") String email);
 
-    @Query(nativeQuery = true, value = "SELECT LAST_INSERT_ID() AS id")
-    int getLastInsertedId();
+        @Modifying
+        @Transactional
+        @Query(nativeQuery = true, value = "UPDATE restaurants SET name = :name, price_range = :priceRange, phone = :phone, email = :email "
+                        +
+                        "WHERE id = :restaurantId")
+        void updateRestaurant(@Param("restaurantId") int restaurantId, @Param("name") String name,
+                        @Param("priceRange") int priceRange, @Param("phone") String phone,
+                        @Param("email") String email);
 
-    // TODO
-    @Modifying
-    @Transactional
-    @Query(nativeQuery = true, value = "TODO Write SQL query here")
-    void deleteRestaurantById(@Param("restaurantId") int restaurantId);
+        @Query(nativeQuery = true, value = "SELECT * FROM restaurants WHERE id = :restaurantId")
+        Optional<Restaurant> findRestaurantById(@Param("restaurantId") int restaurantId);
 
+        @Modifying
+        @Transactional
+        @Query(nativeQuery = true, value = "DELETE FROM restaurants WHERE id = :restaurantId")
+        void deleteRestaurantById(@Param("restaurantId") int restaurantId);
+
+        Optional<Restaurant> findByUserEntityAndAddress(UserEntity userEntity, Address address);
+
+        @Query("SELECT r FROM Restaurant r WHERE r.address = :address AND r.id <> :restaurantId")
+        List<Restaurant> findByAddressAndIdNot(@Param("address") Address address,
+                        @Param("restaurantId") Integer restaurantId);
+
+        @Query("SELECT r FROM Restaurant r WHERE r.address = :address")
+        List<Restaurant> findByAddress(@Param("address") Address address);
 }

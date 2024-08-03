@@ -1,14 +1,15 @@
 package com.rocketFoodDelivery.rocketFood.exception;
-import org.springframework.validation.Errors;
 
-import lombok.Getter;
-
+/**
+ * Exception thrown when validation fails.
+ */
 public class ValidationException extends RuntimeException {
-    @Getter
-    private final Errors errors;
-
-    public ValidationException(Errors errors) {
-        this.errors = errors;
+    /**
+     * Constructs a new ValidationException with the specified detail message.
+     *
+     * @param message the detail message.
+     */
+    public ValidationException(String message) {
+        super(message);
     }
-
 }

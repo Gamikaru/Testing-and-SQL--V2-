@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Represents a courier status entity.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -13,9 +16,11 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "courierStatuses")
 public class CourierStatus {
+    
     @Id
-    @GeneratedValue( strategy = GenerationType.IDENTITY)
-    int id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id; // Primary key for the courier status
+
     @Column(nullable = false)
-    String name;
+    private String name; // Name of the courier status
 }

@@ -5,9 +5,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
-
-public class ApiProductDTO {
-    int id;
-    String name;
-    int cost;
+public class ApiPostAccountDto {
+    String account_type;
+    String account_email;
+    String account_phone;
 }

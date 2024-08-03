@@ -1,12 +1,15 @@
 package com.rocketFoodDelivery.rocketFood.dtos;
 
+import jakarta.validation.constraints.Email;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class ApiPostAccountDTO {
-    String account_type;
+public class ApiGetAccountDto {
+    @Email
+    String primary_email;
+    @Email
     String account_email;
     String account_phone;
 }

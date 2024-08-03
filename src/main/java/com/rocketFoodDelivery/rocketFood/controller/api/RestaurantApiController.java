@@ -2,98 +2,137 @@ package com.rocketFoodDelivery.rocketFood.controller.api;
 
 import com.rocketFoodDelivery.rocketFood.dtos.ApiCreateRestaurantDto;
 import com.rocketFoodDelivery.rocketFood.dtos.ApiRestaurantDto;
+import com.rocketFoodDelivery.rocketFood.exception.ValidationException;
+import com.rocketFoodDelivery.rocketFood.exception.ResourceNotFoundException;
 import com.rocketFoodDelivery.rocketFood.service.RestaurantService;
 import com.rocketFoodDelivery.rocketFood.util.ResponseBuilder;
-import com.rocketFoodDelivery.rocketFood.exception.*;
 
 import jakarta.validation.Valid;
-
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
 
-import java.util.Optional;
+import java.util.List;
 
+@Slf4j
 @RestController
+@RequestMapping("/api/restaurants")
+@Validated
 public class RestaurantApiController {
-    private RestaurantService restaurantService;
 
-    @Autowired
+    private final RestaurantService restaurantService;
+
     public RestaurantApiController(RestaurantService restaurantService) {
         this.restaurantService = restaurantService;
     }
 
-    // TODO
+    @PostMapping
+    public ResponseEntity<?> createRestaurant(@RequestBody @Valid ApiCreateRestaurantDto restaurantDto) {
+        log.info("Received request to create restaurant: {}", restaurantDto);
 
-    /**
-     * Creates a new restaurant.
-     *
-     * @param restaurant The data for the new restaurant.
-     * @return ResponseEntity with the created restaurant's data, or a BadRequestException if creation fails.
-     */
-    @PostMapping("/api/restaurants")
-    public ResponseEntity<Object> createRestaurant(@RequestBody ApiCreateRestaurantDto restaurant) {
-        return null; // TODO return proper object
-    }
-    
-    // TODO
-
-    /**
-     * Deletes a restaurant by ID.
-     *
-     * @param id The ID of the restaurant to delete.
-     * @return ResponseEntity with a success message, or a ResourceNotFoundException if the restaurant is not found.
-     */
-    @DeleteMapping("/api/restaurants/{id}")
-    public ResponseEntity<Object> deleteRestaurant(@PathVariable int id){
-        return null; // TODO return proper object
+        try {
+            log.info("Validating restaurant data: {}", restaurantDto);
+            ApiRestaurantDto savedRestaurant = restaurantService.createRestaurant(restaurantDto);
+            log.info("Restaurant created successfully: {}", savedRestaurant);
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildResponse("Success", savedRestaurant, HttpStatus.CREATED);
+        } catch (ValidationException ex) {
+            log.error("Validation error: {}", ex.getMessage());
+            return ResponseBuilder.buildBadRequestResponse("Invalid or missing parameters");
+        } catch (Exception ex) {
+            log.error("Exception occurred while saving restaurant: {}", ex.getMessage(), ex);
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildErrorResponse("Internal server error: " + ex.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
-    // TODO
+    @GetMapping
+    public ResponseEntity<?> getRestaurants(@RequestParam(required = false) Integer rating,
+            @RequestParam(name = "price_range", required = false) Integer priceRange) {
+        log.info("Received GET request to fetch restaurants with rating: {} and price range: {}", rating, priceRange);
 
-    /**
-     * Updates an existing restaurant by ID.
-     *
-     * @param id                    The ID of the restaurant to update.
-     * @param restaurantUpdateData  The updated data for the restaurant.
-     * @param result                BindingResult for validation.
-     * @return ResponseEntity with the updated restaurant's data
-     */
-    @PutMapping("/api/restaurants/{id}")
-    public ResponseEntity<Object> updateRestaurant(@PathVariable("id") int id, @Valid @RequestBody ApiCreateRestaurantDto restaurantUpdateData, BindingResult result) {
-        return null; // TODO return proper object
+        if (priceRange == null) {
+            log.warn("Price range is null");
+        } else {
+            log.info("Price range is: {}", priceRange);
+        }
+
+        try {
+            List<ApiRestaurantDto> restaurants = restaurantService.getRestaurants(rating, priceRange);
+            log.info("Fetched restaurants: {}", restaurants);
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildResponse("Success", restaurants, HttpStatus.OK);
+        } catch (Exception ex) {
+            log.error("Exception occurred while fetching restaurants: {}", ex.getMessage());
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildErrorResponse("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
-    /**
-     * Retrieves details for a restaurant, including its average rating, based on the provided restaurant ID.
-     *
-     * @param id The unique identifier of the restaurant to retrieve.
-     * @return ResponseEntity with HTTP 200 OK if the restaurant is found, HTTP 404 Not Found otherwise.
-     *
-     * @see RestaurantService#findRestaurantWithAverageRatingById(int) for details on retrieving restaurant information.
-     */
-    @GetMapping("/api/restaurants/{id}")
-    public ResponseEntity<Object> getRestaurantById(@PathVariable int id) {
-        Optional<ApiRestaurantDto> restaurantWithRatingOptional = restaurantService.findRestaurantWithAverageRatingById(id);
-        if (!restaurantWithRatingOptional.isPresent()) throw new ResourceNotFoundException(String.format("Restaurant with id %d not found", id));
-        return ResponseBuilder.buildOkResponse(restaurantWithRatingOptional.get());
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getRestaurantById(@PathVariable Integer id) {
+        log.info("Fetching restaurant with ID: {}", id);
+
+        try {
+            log.info("Calling service to fetch restaurant by ID.");
+            ApiRestaurantDto restaurant = restaurantService.getRestaurantById(id);
+            log.info("Restaurant details: {}", restaurant);
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildResponse("Success", restaurant, HttpStatus.OK);
+        } catch (ResourceNotFoundException ex) {
+            log.error("Restaurant not found with ID: {}", id);
+            return ResponseBuilder.buildNotFoundResponse("Restaurant with id " + id + " not found");
+        } catch (Exception ex) {
+            log.error("Exception occurred while fetching restaurant: {}", ex.getMessage());
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildErrorResponse("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
-    /**
-     * Returns a list of restaurants given a rating and price range
-     *
-     * @param rating integer from 1 to 5 (optional)
-     * @param priceRange integer from 1 to 3 (optional)
-     * @return A list of restaurants that match the specified criteria
-     * 
-     * @see RestaurantService#findRestaurantsByRatingAndPriceRange(Integer, Integer) for details on retrieving restaurant information.
-     */
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateRestaurant(@PathVariable Integer id,
+            @RequestBody @Valid ApiCreateRestaurantDto restaurantDto) {
+        log.info("Received request to update restaurant: {}", restaurantDto);
 
-    @GetMapping("/api/restaurants")
-    public ResponseEntity<Object> getAllRestaurants(
-        @RequestParam(name = "rating", required = false) Integer rating,
-        @RequestParam(name = "price_range", required = false) Integer priceRange) {
-        return ResponseBuilder.buildOkResponse(restaurantService.findRestaurantsByRatingAndPriceRange(rating, priceRange));
+        try {
+            log.info("Validating updated restaurant data: {}", restaurantDto);
+            ApiRestaurantDto updatedRestaurant = restaurantService.updateRestaurant(id, restaurantDto);
+            log.info("Restaurant updated successfully: {}", updatedRestaurant);
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildResponse("Success", updatedRestaurant, HttpStatus.OK);
+        } catch (ValidationException ex) {
+            log.error("Validation error: {}", ex.getMessage());
+            return ResponseBuilder.buildBadRequestResponse("Validation failed: " + ex.getMessage());
+        } catch (ResourceNotFoundException ex) {
+            log.error("Restaurant not found with ID: {}", id);
+            return ResponseBuilder.buildNotFoundResponse("Restaurant with id " + id + " not found");
+        } catch (Exception ex) {
+            log.error("Exception occurred while updating restaurant: {}", ex.getMessage());
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildErrorResponse("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteRestaurant(@PathVariable Integer id) {
+        log.info("Deleting restaurant with ID: {}", id);
+
+        try {
+            log.info("Calling service to delete restaurant.");
+            ApiRestaurantDto deletedRestaurant = restaurantService.deleteRestaurant(id);
+            log.info("Restaurant deleted successfully: {}", id);
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildResponse("Success", deletedRestaurant, HttpStatus.OK);
+        } catch (ResourceNotFoundException ex) {
+            log.error("Restaurant not found with ID: {}", id);
+            return ResponseBuilder.buildNotFoundResponse("Restaurant with id " + id + " not found");
+        } catch (Exception ex) {
+            log.error("Exception occurred while deleting restaurant: {}", ex.getMessage());
+            // Changed to use HttpStatus instead of raw integer
+            return ResponseBuilder.buildErrorResponse("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

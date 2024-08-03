@@ -11,20 +11,33 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+// Annotation to indicate that this interface is a Spring Data repository
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Integer> {
+
+    // Method to find an Order by its ID
     Optional<Order> findById(int id);
+
+    // Method to find all Orders by customer ID
     List<Order> findByCustomerId(int id);
+
+    // Method to find all Orders by restaurant ID
     List<Order> findByRestaurantId(int id);
+
+    // Method to find all Orders by courier ID
     List<Order> findByCourierId(int id);
 
-    // TODO
-    @Query(nativeQuery = true, value = "TODO Write SQL query here")
+    // Custom query to find all Orders by restaurant ID
+    @Query(nativeQuery = true, value = "SELECT * FROM orders WHERE restaurant_id = :restaurantId")
     List<Order> findOrdersByRestaurantId(@Param("restaurantId") int restaurantId);
 
-    // TODO
+    // Custom query to delete an Order by its ID
+    // The @Modifying annotation indicates that this is a modifying query (e.g.,
+    // INSERT, UPDATE, DELETE)
+    // The @Transactional annotation ensures that the operation is executed within a
+    // transaction
     @Modifying
     @Transactional
-    @Query(nativeQuery = true, value = "TODO Write SQL query here")
+    @Query(nativeQuery = true, value = "DELETE FROM orders WHERE id = :orderId")
     void deleteOrderById(@Param("orderId") int orderId);
 }

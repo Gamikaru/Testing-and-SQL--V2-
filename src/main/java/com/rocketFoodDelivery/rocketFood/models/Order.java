@@ -9,7 +9,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
+/**
+ * Represents an order entity.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,34 +22,41 @@ import org.hibernate.annotations.OnDeleteAction;
 @Entity
 @Table(name = "orders")
 public class Order {
+
     @Id
-    @GeneratedValue( strategy = GenerationType.IDENTITY)
-    private int id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id; // Primary key for the order
 
-
-    @ManyToOne(cascade = CascadeType.REMOVE)
+    @ManyToOne
+    @JoinColumn(name = "restaurant_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "restaurant_id" , nullable = false)
-    private Restaurant restaurant;
+    @JsonBackReference
+    private Restaurant restaurant; // Restaurant associated with the order
 
-    @ManyToOne(cascade = CascadeType.REMOVE)
-    @OnDelete(action = OnDeleteAction.CASCADE)
+    @ManyToOne
     @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
-
-    @ManyToOne(cascade = CascadeType.REMOVE)
     @OnDelete(action = OnDeleteAction.CASCADE)
+    @JsonBackReference
+    private Customer customer; // Customer associated with the order
 
+    @ManyToOne
     @JoinColumn(name = "status_id", nullable = false)
-    private OrderStatus order_status ;
+    private OrderStatus order_status; // Status of the order
 
-    @ManyToOne(cascade = CascadeType.REMOVE)
-    @OnDelete(action = OnDeleteAction.CASCADE)
+    @ManyToOne
     @JoinColumn(name = "courier_id")
-    private Courier courier;
+    @JsonManagedReference
+    private Courier courier; // Courier associated with the order
 
     @Column(nullable = false)
     @Min(1)
     @Max(5)
-    private int restaurant_rating;
+    private int restaurant_rating; // Rating of the restaurant
+
+    /**
+     * Returns the restaurant rating.
+     */
+    public int getRestaurantRating() {
+        return this.restaurant_rating;
+    }
 }

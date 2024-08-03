@@ -31,3 +31,13 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### application.properties ###
+src\main\resources\application-test.properties
+src\main\resources\application.properties
+
+### Tree ###
+directory-tree.txt
+
+
+
