@@ -9,12 +9,16 @@ import com.rocketFoodDelivery.rocketFood.models.Address;
 import com.rocketFoodDelivery.rocketFood.models.Restaurant;
 import com.rocketFoodDelivery.rocketFood.models.Product;
 import com.rocketFoodDelivery.rocketFood.models.Employee;
+import com.rocketFoodDelivery.rocketFood.models.Customer;
 import com.rocketFoodDelivery.rocketFood.models.UserEntity;
 import com.rocketFoodDelivery.rocketFood.repository.AddressRepository;
 import com.rocketFoodDelivery.rocketFood.repository.RestaurantRepository;
 import com.rocketFoodDelivery.rocketFood.repository.EmployeeRepository;
 import com.rocketFoodDelivery.rocketFood.repository.ProductRepository;
 import com.rocketFoodDelivery.rocketFood.repository.UserRepository;
+import com.rocketFoodDelivery.rocketFood.repository.CustomerRepository;
+import com.rocketFoodDelivery.rocketFood.repository.OrderRepository;
+import com.rocketFoodDelivery.rocketFood.repository.ProductOrderRepository;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -23,13 +27,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.Arrays;
 
-/**
- * Service class for managing restaurants.
- */
 @Slf4j
 @Service
 public class RestaurantService {
@@ -39,36 +40,35 @@ public class RestaurantService {
     private final UserRepository userRepository;
     private final EmployeeRepository employeeRepository;
     private final ProductRepository productRepository;
+    private final CustomerRepository customerRepository;
+    private final OrderRepository orderRepository;
+    private final ProductOrderRepository productOrderRepository;
 
-    /**
-     * Constructor for dependency injection of repositories.
-     * 
-     * @param restaurantRepository the repository for restaurants.
-     * @param addressRepository the repository for addresses.
-     * @param userRepository the repository for users.
-     * @param employeeRepository the repository for employees.
-     * @param productRepository the repository for products.
-     */
     public RestaurantService(RestaurantRepository restaurantRepository, AddressRepository addressRepository,
-            UserRepository userRepository, EmployeeRepository employeeRepository, ProductRepository productRepository) {
+            UserRepository userRepository, EmployeeRepository employeeRepository, ProductRepository productRepository,
+            CustomerRepository customerRepository, OrderRepository orderRepository,
+            ProductOrderRepository productOrderRepository) {
         this.restaurantRepository = restaurantRepository;
         this.addressRepository = addressRepository;
         this.userRepository = userRepository;
         this.employeeRepository = employeeRepository;
         this.productRepository = productRepository;
+        this.customerRepository = customerRepository;
+        this.orderRepository = orderRepository;
+        this.productOrderRepository = productOrderRepository;
     }
 
-    /**
-     * Creates a new restaurant.
-     * 
-     * @param restaurantDto the data transfer object containing restaurant details.
-     * @return the created restaurant as an ApiRestaurantDto.
-     */
     @Transactional
     public ApiRestaurantDto createRestaurant(@Valid ApiCreateRestaurantDto restaurantDto) {
         log.info("Validating restaurant data: {}", restaurantDto);
-        validateAddress(restaurantDto);
-        UserEntity userEntity = validateUser(restaurantDto.getUserId());
+
+        if (restaurantDto.getAddress() == null) {
+            log.error("Address is required");
+            throw new ValidationException("Address is required");
+        }
+
+        UserEntity userEntity = userRepository.findById(restaurantDto.getUserId())
+                .orElseThrow(() -> new ValidationException("User not found"));
 
         log.info("Converting DTO to entity: {}", restaurantDto);
         Address address = mapToAddressEntity(restaurantDto.getAddress());
@@ -83,13 +83,6 @@ public class RestaurantService {
         return mapToApiRestaurantDto(savedRestaurant);
     }
 
-    /**
-     * Retrieves a list of restaurants based on rating and price range.
-     * 
-     * @param rating the rating filter.
-     * @param priceRange the price range filter.
-     * @return a list of restaurants as ApiRestaurantDto.
-     */
     public List<ApiRestaurantDto> getRestaurants(Integer rating, Integer priceRange) {
         log.info("Fetching restaurants with rating: {} and price range: {}", rating, priceRange);
 
@@ -102,37 +95,40 @@ public class RestaurantService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Retrieves a restaurant by its ID.
-     * 
-     * @param id the ID of the restaurant.
-     * @return the restaurant as an ApiRestaurantDto.
-     */
     public ApiRestaurantDto getRestaurantById(Integer id) {
         log.info("Fetching restaurant by ID: {}", id);
 
-        Restaurant restaurant = restaurantRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Restaurant with id " + id + " not found"));
+        Optional<Restaurant> optionalRestaurant = restaurantRepository.findById(id);
+        if (optionalRestaurant.isEmpty()) {
+            log.error("Restaurant with id {} not found", id);
+            throw new ResourceNotFoundException("Restaurant with id " + id + " not found");
+        }
+
+        Restaurant restaurant = optionalRestaurant.get();
         log.info("Converting entity to DTO: {}", restaurant);
         return mapToApiRestaurantDto(restaurant);
     }
 
-    /**
-     * Updates an existing restaurant.
-     * 
-     * @param id the ID of the restaurant.
-     * @param restaurantDto the data transfer object containing updated restaurant details.
-     * @return the updated restaurant as an ApiRestaurantDto.
-     */
     @Transactional
     public ApiRestaurantDto updateRestaurant(Integer id, @Valid ApiCreateRestaurantDto restaurantDto) {
         log.info("Validating updated restaurant data: {}", restaurantDto);
-        validateAddress(restaurantDto);
-        UserEntity userEntity = validateUser(restaurantDto.getUserId());
 
-        Restaurant existingRestaurant = restaurantRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Restaurant with id " + id + " not found"));
+        if (restaurantDto.getAddress() == null) {
+            log.error("Address is required");
+            throw new ValidationException("Address is required");
+        }
 
+        UserEntity userEntity = userRepository.findById(restaurantDto.getUserId())
+                .orElseThrow(() -> new ValidationException("User not found"));
+
+        log.info("Fetching existing restaurant by ID: {}", id);
+        Optional<Restaurant> optionalRestaurant = restaurantRepository.findById(id);
+        if (optionalRestaurant.isEmpty()) {
+            log.error("Restaurant with id {} not found", id);
+            throw new ResourceNotFoundException("Restaurant with id " + id + " not found");
+        }
+
+        Restaurant existingRestaurant = optionalRestaurant.get();
         Address updatedAddress = mapToAddressEntity(restaurantDto.getAddress());
 
         log.info("Updating entity fields with DTO data: {}", restaurantDto);
@@ -151,18 +147,17 @@ public class RestaurantService {
         return mapToApiRestaurantDto(updatedRestaurant);
     }
 
-    /**
-     * Deletes a restaurant by its ID.
-     * 
-     * @param id the ID of the restaurant.
-     * @return the deleted restaurant as an ApiRestaurantDto.
-     */
     @Transactional
     public ApiRestaurantDto deleteRestaurant(Integer id) {
         log.info("Fetching restaurant by ID: {}", id);
 
-        Restaurant restaurant = restaurantRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Restaurant with id " + id + " not found"));
+        Optional<Restaurant> optionalRestaurant = restaurantRepository.findById(id);
+        if (optionalRestaurant.isEmpty()) {
+            log.error("Restaurant with id {} not found", id);
+            throw new ResourceNotFoundException("Restaurant with id " + id + " not found");
+        }
+
+        Restaurant restaurant = optionalRestaurant.get();
 
         // Delete related products first
         List<Product> products = productRepository.findByRestaurantId(restaurant.getId());
@@ -170,49 +165,23 @@ public class RestaurantService {
             productRepository.deleteById(product.getId());
         }
 
-        // Fetch and delete employees related to the restaurant
-        List<Employee> employees = employeeRepository.findEmployeesByRestaurantId(restaurant.getId());
-        for (Employee employee : employees) {
-            employeeRepository.deleteById(employee.getId());
-        }
+        // Delete related orders and product orders
+        orderRepository.findByRestaurantId(restaurant.getId()).forEach(order -> {
+            productOrderRepository.deleteProductOrdersByOrderId(order.getId());
+            orderRepository.deleteOrderById(order.getId());
+        });
 
         // Now delete the restaurant
         log.info("Deleting restaurant entity: {}", restaurant);
         restaurantRepository.deleteRestaurantById(restaurant.getId());
 
+        // Directly delete the address as it should be unique to the restaurant
+        addressRepository.deleteById(restaurant.getAddress().getId());
+
         // Return the deleted restaurant details as DTO
         return mapToApiRestaurantDto(restaurant);
     }
 
-    /**
-     * Validates if the address exists in the DTO.
-     * 
-     * @param restaurantDto the restaurant DTO.
-     */
-    private void validateAddress(ApiCreateRestaurantDto restaurantDto) {
-        if (restaurantDto.getAddress() == null) {
-            log.error("Address is required");
-            throw new ValidationException("Address is required");
-        }
-    }
-
-    /**
-     * Validates if the user exists in the database.
-     * 
-     * @param userId the user ID.
-     * @return the UserEntity.
-     */
-    private UserEntity validateUser(Integer userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new ValidationException("User not found"));
-    }
-
-    /**
-     * Maps an ApiAddressDto to an Address entity.
-     * 
-     * @param addressDto the address DTO.
-     * @return the Address entity.
-     */
     private Address mapToAddressEntity(ApiAddressDto addressDto) {
         return Address.builder()
                 .streetAddress(addressDto.getStreetAddress())
@@ -221,14 +190,6 @@ public class RestaurantService {
                 .build();
     }
 
-    /**
-     * Maps an ApiCreateRestaurantDto to a Restaurant entity.
-     * 
-     * @param restaurantDto the restaurant DTO.
-     * @param address the Address entity.
-     * @param userEntity the UserEntity.
-     * @return the Restaurant entity.
-     */
     private Restaurant mapToRestaurantEntity(ApiCreateRestaurantDto restaurantDto, Address address,
             UserEntity userEntity) {
         return Restaurant.builder()
@@ -241,12 +202,6 @@ public class RestaurantService {
                 .build();
     }
 
-    /**
-     * Maps a Restaurant entity to an ApiRestaurantDto.
-     * 
-     * @param restaurant the Restaurant entity.
-     * @return the ApiRestaurantDto.
-     */
     private ApiRestaurantDto mapToApiRestaurantDto(Restaurant restaurant) {
         return ApiRestaurantDto.builder()
                 .id(restaurant.getId())
@@ -257,12 +212,6 @@ public class RestaurantService {
                 .build();
     }
 
-    /**
-     * Maps restaurant data from a database query to an ApiRestaurantDto.
-     * 
-     * @param data the restaurant data from the query.
-     * @return the ApiRestaurantDto.
-     */
     private ApiRestaurantDto mapToApiRestaurantDtoFromData(Object[] data) {
         log.info("Mapping restaurant data to DTO: {}", Arrays.toString(data));
         Address address = addressRepository.findById((Integer) data[4]).orElse(null);
@@ -277,12 +226,6 @@ public class RestaurantService {
         return restaurantDto;
     }
 
-    /**
-     * Calculates the rating for a restaurant.
-     * 
-     * @param restaurant the Restaurant entity.
-     * @return the calculated rating.
-     */
     private int calculateRestaurantRating(Restaurant restaurant) {
         log.info("Calculating rating for restaurant: {}", restaurant.getId());
         List<Object[]> ratingData = restaurantRepository.findRestaurantWithAverageRatingById(restaurant.getId());
@@ -291,12 +234,6 @@ public class RestaurantService {
         return rating;
     }
 
-    /**
-     * Maps an Address entity to an ApiAddressDto.
-     * 
-     * @param address the Address entity.
-     * @return the ApiAddressDto.
-     */
     private ApiAddressDto mapToApiAddressDto(Address address) {
         if (address == null) {
             return null;

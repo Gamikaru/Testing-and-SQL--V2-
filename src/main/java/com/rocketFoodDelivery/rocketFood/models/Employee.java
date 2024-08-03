@@ -27,9 +27,9 @@ public class Employee {
     @JoinColumn(name = "user_id", unique = true, nullable = false)
     private UserEntity userEntity; // User associated with the employee
 
-    @OneToOne(cascade = CascadeType.REMOVE)
-    @JoinColumn(name = "address_id", nullable = false)
+    @ManyToOne
     @OnDelete(action = OnDeleteAction.CASCADE) // Ensure cascading delete
+    @JoinColumn(name = "address_id", nullable = false)
     private Address address; // Address of the employee
 
     @Column(nullable = false)

@@ -6,8 +6,16 @@ import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
 
+/**
+ * Unit tests for ApiResponseDto.
+ */
 public class ApiResponseDtoTest {
 
+    /**
+     * Tests JSON serialization and deserialization of ApiResponseDto.
+     * 
+     * @throws Exception if an error occurs during JSON processing.
+     */
     @Test
     public void testJsonSerialization() throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -23,6 +31,9 @@ public class ApiResponseDtoTest {
         assertThat(deserializedData.get("field")).isEqualTo("test");
     }
 
+    /**
+     * Inner class to represent some data for testing purposes.
+     */
     private static class SomeData {
         private String field;
 

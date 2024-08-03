@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 /**
  * Represents a product entity.
@@ -23,6 +25,7 @@ public class Product {
 
     @ManyToOne
     @JoinColumn(name = "restaurant_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Restaurant restaurant; // Restaurant associated with the product
 
     @Column(nullable = false)

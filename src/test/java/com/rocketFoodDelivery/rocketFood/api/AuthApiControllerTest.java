@@ -25,6 +25,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Integration tests for the AuthApiController.
+ */
 @SpringBootTest(classes = RocketFoodApplication.class)
 @AutoConfigureMockMvc
 @TestPropertySource(locations = "classpath:application-test.properties")
@@ -47,6 +50,9 @@ public class AuthApiControllerTest {
         private AuthRequestDto validAuthRequest;
         private UserEntity validUser;
 
+        /**
+         * Setup method to initialize test data before each test.
+         */
         @BeforeEach
         public void setUp() {
                 validAuthRequest = createValidAuthRequest();
@@ -67,6 +73,11 @@ public class AuthApiControllerTest {
                                 .build();
         }
 
+        /**
+         * Tests successful authentication with valid credentials.
+         * 
+         * @throws Exception if an error occurs during the test.
+         */
         @Test
         public void testAuthenticateWithValidCredentials() throws Exception {
                 Authentication authentication = new UsernamePasswordAuthenticationToken(validUser, null);
@@ -82,6 +93,11 @@ public class AuthApiControllerTest {
                                 .andExpect(jsonPath("$.accessToken").value("dummy-jwt-token"));
         }
 
+        /**
+         * Tests authentication with invalid credentials.
+         * 
+         * @throws Exception if an error occurs during the test.
+         */
         @Test
         public void testAuthenticateWithInvalidCredentials() throws Exception {
                 Mockito.when(authManager.authenticate(Mockito.any(UsernamePasswordAuthenticationToken.class)))
@@ -95,6 +111,11 @@ public class AuthApiControllerTest {
                                 .andExpect(jsonPath("$.message").value("Invalid email or password"));
         }
 
+        /**
+         * Tests authentication with an unexpected error.
+         * 
+         * @throws Exception if an error occurs during the test.
+         */
         @Test
         public void testAuthenticateWithUnexpectedError() throws Exception {
                 // Simulate a general runtime exception to test unexpected error handling
@@ -109,6 +130,11 @@ public class AuthApiControllerTest {
                                 .andExpect(jsonPath("$.message").value("Unexpected error occurred"));
         }
 
+        /**
+         * Tests authentication with a missing email field.
+         * 
+         * @throws Exception if an error occurs during the test.
+         */
         @Test
         public void testAuthenticateWithMissingEmail() throws Exception {
                 AuthRequestDto invalidAuthRequest = AuthRequestDto.builder()
@@ -123,6 +149,11 @@ public class AuthApiControllerTest {
                                 .andExpect(jsonPath("$.message").value("Email is mandatory"));
         }
 
+        /**
+         * Tests authentication with a missing password field.
+         * 
+         * @throws Exception if an error occurs during the test.
+         */
         @Test
         public void testAuthenticateWithMissingPassword() throws Exception {
                 AuthRequestDto invalidAuthRequest = AuthRequestDto.builder()

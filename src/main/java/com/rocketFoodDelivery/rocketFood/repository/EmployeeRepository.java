@@ -2,6 +2,7 @@ package com.rocketFoodDelivery.rocketFood.repository;
 
 import com.rocketFoodDelivery.rocketFood.models.Employee;
 import org.springframework.data.jpa.repository.JpaRepository;
+import com.rocketFoodDelivery.rocketFood.models.Address;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,4 +30,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer> {
             "JOIN restaurants r ON u.id = r.user_id " +
             "WHERE r.id = :restaurantId")
     List<Employee> findEmployeesByRestaurantId(@Param("restaurantId") int restaurantId);
+
+    // Method to find Employees by Address
+    List<Employee> findByAddress(Address address);
 }

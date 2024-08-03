@@ -28,12 +28,12 @@ public class Courier {
     @JoinColumn(name = "user_id", unique = true, nullable = false)
     private UserEntity userEntity; // User associated with the courier
 
-    @ManyToOne(cascade = CascadeType.REMOVE)
+    @ManyToOne
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "address_id", nullable = false)
     private Address address; // Address of the courier
 
-    @ManyToOne(cascade = CascadeType.REMOVE)
+    @ManyToOne
     @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "courierStatus_id", nullable = false)
     private CourierStatus courierStatus; // Status of the courier

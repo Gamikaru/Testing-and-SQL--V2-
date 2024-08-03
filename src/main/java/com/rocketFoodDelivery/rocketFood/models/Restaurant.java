@@ -31,7 +31,7 @@ public class Restaurant {
     @JoinColumn(name = "user_id", nullable = false) // Ensure user_id is not nullable
     private UserEntity userEntity; // User associated with the restaurant
 
-    @ManyToOne(cascade = CascadeType.REMOVE)
+    @ManyToOne
     @JoinColumn(name = "address_id", unique = true, nullable = false) // Ensure address_id is unique and not nullable
     private Address address; // Address of the restaurant
 

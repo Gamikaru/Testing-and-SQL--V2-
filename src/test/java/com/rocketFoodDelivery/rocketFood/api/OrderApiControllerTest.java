@@ -29,6 +29,9 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Integration tests for the OrderApiController.
+ */
 @SpringBootTest(classes = RocketFoodApplication.class)
 @AutoConfigureMockMvc
 @TestPropertySource(locations = "classpath:application-test.properties")
@@ -55,6 +58,9 @@ public class OrderApiControllerTest {
         private ApiOrderStatusDto orderStatusDto;
         private Integer orderId;
 
+        /**
+         * Setup method to initialize test data before each test.
+         */
         @BeforeEach
         public void setup() {
                 MockitoAnnotations.openMocks(this);
@@ -86,6 +92,11 @@ public class OrderApiControllerTest {
                 orderStatusDto = ApiOrderStatusDto.builder().status("delivered").build();
         }
 
+        /**
+         * Tests changing the status of an order.
+         * 
+         * @throws Exception if an error occurs during the test.
+         */
         @Test
         @WithMockUser
         public void testChangeOrderStatus() throws Exception {
@@ -101,6 +112,11 @@ public class OrderApiControllerTest {
                 verify(orderService, times(1)).changeOrderStatus(orderId, orderStatusDto);
         }
 
+        /**
+         * Tests changing the status of an order when the order is not found.
+         * 
+         * @throws Exception if an error occurs during the test.
+         */
         @Test
         @WithMockUser
         public void testChangeOrderStatus_NotFound() throws Exception {
@@ -117,6 +133,11 @@ public class OrderApiControllerTest {
                 verify(orderService, times(1)).changeOrderStatus(orderId, orderStatusDto);
         }
 
+        /**
+         * Tests retrieving orders by customer ID.
+         * 
+         * @throws Exception if an error occurs during the test.
+         */
         @Test
         @WithMockUser
         public void testGetOrdersByTypeAndId_Customer() throws Exception {
@@ -143,6 +164,11 @@ public class OrderApiControllerTest {
                 verify(orderService, times(1)).getOrdersByTypeAndId("customer", 1);
         }
 
+        /**
+         * Tests creating a new order.
+         * 
+         * @throws Exception if an error occurs during the test.
+         */
         @Test
         @WithMockUser
         public void testCreateOrder() throws Exception {
@@ -162,6 +188,11 @@ public class OrderApiControllerTest {
                 verify(orderService, times(1)).createOrder(any(ApiOrderRequestDto.class));
         }
 
+        /**
+         * Tests creating a new order when the customer is not found.
+         * 
+         * @throws Exception if an error occurs during the test.
+         */
         @Test
         @WithMockUser
         public void testCreateOrder_Exception() throws Exception {
