@@ -37,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(locations = "classpath:application-test.properties")
 public class OrderApiControllerTest {
 
-        private static final String BASE_URL = "/api/orders";
+        private static final String BASE_URL = "/api/order";
         private static final String SUCCESS_MESSAGE = "Success";
         private static final String NOT_FOUND_MESSAGE = "Order with id 1 not found";
 

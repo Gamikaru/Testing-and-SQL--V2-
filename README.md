@@ -181,7 +181,7 @@ The Rocket Food Delivery API is a comprehensive service designed for managing fo
 
 ### Orders
 
-- **`POST /api/orders`**
+- **`POST /api/order`**
 
   **Request Body:**
 
@@ -199,9 +199,9 @@ The Rocket Food Delivery API is a comprehensive service designed for managing fo
   }
   ```
 
-- **`GET /api/orders/{id}`**
+- **`GET /api/order/{id}`**
 
-- **`PUT /api/orders/{id}`**
+- **`PUT /api/order/{id}`**
 
   **Request Body:**
 
@@ -211,7 +211,7 @@ The Rocket Food Delivery API is a comprehensive service designed for managing fo
   }
   ```
 
-- **`DELETE /api/orders/{id}`**
+- **`DELETE /api/order/{id}`**
 
 ### Products
 
