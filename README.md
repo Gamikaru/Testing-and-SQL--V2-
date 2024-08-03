@@ -1,3 +1,4 @@
+
 # Rocket Food Delivery API
 
 ## Overview
@@ -21,6 +22,10 @@ The Rocket Food Delivery API is a comprehensive service designed for managing fo
 
 - `application.properties` - Configuration for the application
 - `templates/` - HTML templates for the frontend
+
+`src/test/resources/`
+
+- `application-test.properties` - Configuration for test environments
 
 `src/test/java/com/rocketFoodDelivery/rocketFood/`
 
@@ -276,12 +281,32 @@ To run the tests, use the following command:
 mvn test
 ```
 
+## Configuration for Tests
+
+Add an `application-test.properties` file in `src/test/resources/` with the following content:
+
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/rdelivery_test
+spring.datasource.username=test_username
+spring.datasource.password=test_password
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+spring.jpa.database-platform=org.hibernate.dialect.MySQLDialect
+spring.jpa.hibernate.ddl-auto=create-drop
+spring.jpa.show-sql=true
+
+hibernate.hbm2ddl.auto=create-drop
+hibernate.show_sql=true
+
+logging.level.root=INFO
+logging.level.com.rocketFoodDelivery=DEBUG
+logging.level.org.hibernate.SQL=DEBUG
+```
+
+Replace `test_username` and `test_password` with appropriate test database credentials.
 
 ## Acknowledgments
 
 - Spring Boot for the framework.
 - MySQL for the database.
 - CodeBoxx Academy
-
----
-
